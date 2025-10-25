@@ -26,7 +26,7 @@ serve(async (req) => {
     if (!source) throw new Error("Source not found");
 
     // Simple chunking - split by paragraphs
-    const chunks = source.content.split("\n\n").filter(c => c.trim().length > 50);
+    const chunks = source.content.split("\n\n").filter((c: string) => c.trim().length > 50);
     
     console.log(`Processing ${chunks.length} chunks for source ${sourceId}`);
 
@@ -35,7 +35,8 @@ serve(async (req) => {
     });
   } catch (error) {
     console.error("Error:", error);
-    return new Response(JSON.stringify({ error: error.message }), {
+    const message = error instanceof Error ? error.message : "Unknown error";
+    return new Response(JSON.stringify({ error: message }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
