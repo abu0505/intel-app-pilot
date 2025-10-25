@@ -79,6 +79,93 @@ export type Database = {
           },
         ]
       }
+      flashcard_progress: {
+        Row: {
+          card_index: number
+          created_at: string | null
+          easiness_factor: number | null
+          flashcard_id: string
+          id: string
+          interval_days: number | null
+          is_learned: boolean | null
+          last_reviewed_at: string | null
+          next_review_at: string | null
+          repetitions: number | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          card_index: number
+          created_at?: string | null
+          easiness_factor?: number | null
+          flashcard_id: string
+          id?: string
+          interval_days?: number | null
+          is_learned?: boolean | null
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          repetitions?: number | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          card_index?: number
+          created_at?: string | null
+          easiness_factor?: number | null
+          flashcard_id?: string
+          id?: string
+          interval_days?: number | null
+          is_learned?: boolean | null
+          last_reviewed_at?: string | null
+          next_review_at?: string | null
+          repetitions?: number | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
+      flashcards: {
+        Row: {
+          average_retention_percentage: number | null
+          card_count: number | null
+          cards: Json
+          created_at: string | null
+          id: string
+          source_ids: string[] | null
+          study_algorithm: string | null
+          times_studied: number | null
+          title: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          average_retention_percentage?: number | null
+          card_count?: number | null
+          cards: Json
+          created_at?: string | null
+          id?: string
+          source_ids?: string[] | null
+          study_algorithm?: string | null
+          times_studied?: number | null
+          title: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          average_retention_percentage?: number | null
+          card_count?: number | null
+          cards?: Json
+          created_at?: string | null
+          id?: string
+          source_ids?: string[] | null
+          study_algorithm?: string | null
+          times_studied?: number | null
+          title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null

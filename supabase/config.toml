@@ -1,1 +1,13 @@
 project_id = "ebumnkfifxbwkhddudmb"
+
+[functions.ai-chat]
+verify_jwt = true
+
+[functions.generate-embeddings]
+verify_jwt = true
+
+[functions.generate-quiz]
+verify_jwt = true
+
+[functions.generate-flashcards]
+verify_jwt = true

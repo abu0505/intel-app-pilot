@@ -7,6 +7,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Bot, User, Sparkles } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 
 interface Message {
   id: string;
@@ -51,6 +52,16 @@ const ChatTab = () => {
       });
 
       if (saveError) throw saveError;
+
+      // Add temporary loading message
+      await supabase.from("chat_histories").insert({
+        user_id: userData.user.id,
+        session_id: sessionId,
+        message_type: "assistant",
+        content: "...",
+      });
+
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
 
       // Call chat edge function
       const { data, error } = await supabase.functions.invoke("ai-chat", {
@@ -129,15 +140,25 @@ const ChatTab = () => {
                         : "bg-muted"
                     }`}
                   >
-                    <p className="whitespace-pre-wrap">{msg.content}</p>
-                    {msg.sources_referenced && msg.sources_referenced.length > 0 && (
-                      <div className="mt-2 flex flex-wrap gap-1">
-                        {msg.sources_referenced.map((sourceId, idx) => (
-                          <Badge key={idx} variant="secondary" className="text-xs">
-                            Source {idx + 1}
-                          </Badge>
-                        ))}
+                    {msg.content === "..." ? (
+                      <div className="space-y-2">
+                        <Skeleton className="h-4 w-full" />
+                        <Skeleton className="h-4 w-3/4" />
+                        <Skeleton className="h-4 w-5/6" />
                       </div>
+                    ) : (
+                      <>
+                        <p className="whitespace-pre-wrap">{msg.content}</p>
+                        {msg.sources_referenced && msg.sources_referenced.length > 0 && (
+                          <div className="mt-2 flex flex-wrap gap-1">
+                            {msg.sources_referenced.map((sourceId, idx) => (
+                              <Badge key={idx} variant="secondary" className="text-xs">
+                                Source {idx + 1}
+                              </Badge>
+                            ))}
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
                   {msg.message_type === "user" && (

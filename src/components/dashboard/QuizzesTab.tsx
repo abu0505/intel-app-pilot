@@ -15,6 +15,7 @@ const QuizzesTab = () => {
   const queryClient = useQueryClient();
   const [showGenerateForm, setShowGenerateForm] = useState(false);
   const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
+  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const { data: quizzes, isLoading } = useQuery({
@@ -108,53 +109,91 @@ const QuizzesTab = () => {
 
   if (selectedQuiz) {
     const questions = selectedQuiz.questions;
+    const currentQuestion = questions[currentQuestionIndex];
+    const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+    const allAnswered = questions.every((_: any, idx: number) => answers[idx]);
+    
     return (
       <div className="max-w-3xl mx-auto space-y-6">
-        <div>
-          <Button variant="outline" onClick={() => setSelectedQuiz(null)} className="mb-4">
-            ← Back to Quizzes
-          </Button>
-          <h2 className="text-3xl font-bold">{selectedQuiz.title}</h2>
-          <div className="flex items-center gap-2 mt-2">
-            <Badge variant="secondary">{selectedQuiz.difficulty_level}</Badge>
-            <Badge variant="outline">{questions.length} questions</Badge>
-          </div>
-        </div>
+        <Button variant="outline" onClick={() => { setSelectedQuiz(null); setAnswers({}); setCurrentQuestionIndex(0); }}>
+          ← Back to Quizzes
+        </Button>
 
-        <div className="space-y-4">
-          {questions.map((question: any, idx: number) => (
-            <Card key={idx} style={{ boxShadow: "var(--shadow-soft)" }}>
-              <CardHeader>
-                <CardTitle className="text-lg">
-                  Question {idx + 1}: {question.question}
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-2">
-                {question.options.map((option: string, optIdx: number) => (
+        <Card>
+          <CardHeader>
+            <CardTitle>{selectedQuiz.title}</CardTitle>
+            <CardDescription>
+              Question {currentQuestionIndex + 1} of {questions.length} · {selectedQuiz.difficulty_level}
+            </CardDescription>
+            <div className="w-full bg-secondary h-2 rounded-full mt-2">
+              <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
+            </div>
+          </CardHeader>
+          <CardContent className="space-y-6">
+            <div className="space-y-4">
+              <p className="text-xl font-semibold">
+                {currentQuestion.question}
+              </p>
+              <div className="space-y-2">
+                {currentQuestion.options.map((option: string, optIdx: number) => (
                   <Button
                     key={optIdx}
-                    variant={answers[idx] === option ? "default" : "outline"}
+                    variant={answers[currentQuestionIndex] === option ? "default" : "outline"}
                     className="w-full justify-start text-left"
-                    onClick={() => setAnswers({ ...answers, [idx]: option })}
+                    onClick={() => setAnswers({ ...answers, [currentQuestionIndex]: option })}
                   >
                     <ChevronRight className="w-4 h-4 mr-2" />
                     {option}
                   </Button>
                 ))}
-              </CardContent>
-            </Card>
-          ))}
-        </div>
+              </div>
+            </div>
 
-        <Button
-          size="lg"
-          className="w-full"
-          onClick={() => submitQuizMutation.mutate()}
-          disabled={Object.keys(answers).length !== questions.length}
-        >
-          <Trophy className="w-4 h-4 mr-2" />
-          Submit Quiz
-        </Button>
+            <div className="flex items-center justify-between pt-4">
+              <Button
+                variant="outline"
+                onClick={() => setCurrentQuestionIndex(Math.max(0, currentQuestionIndex - 1))}
+                disabled={currentQuestionIndex === 0}
+              >
+                ← Previous
+              </Button>
+
+              {currentQuestionIndex === questions.length - 1 ? (
+                <Button
+                  disabled={!allAnswered || submitQuizMutation.isPending}
+                  onClick={() => submitQuizMutation.mutate()}
+                >
+                  <Trophy className="w-4 h-4 mr-2" />
+                  {submitQuizMutation.isPending ? "Submitting..." : "Submit Quiz"}
+                </Button>
+              ) : (
+                <Button
+                  onClick={() => setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))}
+                >
+                  Next →
+                </Button>
+              )}
+            </div>
+
+            <div className="flex gap-2 justify-center flex-wrap">
+              {questions.map((_: any, idx: number) => (
+                <button
+                  key={idx}
+                  onClick={() => setCurrentQuestionIndex(idx)}
+                  className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
+                    idx === currentQuestionIndex
+                      ? "bg-primary text-primary-foreground"
+                      : answers[idx]
+                      ? "bg-primary/20 text-primary"
+                      : "bg-secondary text-secondary-foreground"
+                  }`}
+                >
+                  {idx + 1}
+                </button>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
       </div>
     );
   }
