@@ -5,6 +5,7 @@ import { User } from "@supabase/supabase-js";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Brain, LogOut, Sparkles } from "lucide-react";
+import { ThemeToggle } from "@/components/theme-toggle";
 import SourcesTab from "@/components/dashboard/SourcesTab";
 import ChatTab from "@/components/dashboard/ChatTab";
 import QuizzesTab from "@/components/dashboard/QuizzesTab";
@@ -73,10 +74,13 @@ const Dashboard = () => {
               <p className="text-xs text-muted-foreground">Welcome back, {user?.user_metadata?.full_name || "Student"}!</p>
             </div>
           </div>
-          <Button variant="outline" size="sm" onClick={handleSignOut}>
-            <LogOut className="w-4 h-4 mr-2" />
-            Sign Out
-          </Button>
+          <div className="flex items-center gap-2">
+            <ThemeToggle />
+            <Button variant="outline" size="sm" onClick={handleSignOut}>
+              <LogOut className="w-4 h-4 mr-2" />
+              Sign Out
+            </Button>
+          </div>
         </div>
       </header>
 

@@ -2,14 +2,14 @@ import fs from 'fs/promises';
 import { Client } from 'pg';
 import path from 'path';
 
-const MIGRATION_PATH = path.resolve('supabase/migrations/20251024172058_8260512f-f070-49dc-a309-30f0b281beab.sql');
+const MIGRATION_PATH = path.resolve('supabase/migrations/20251025074310_c21e0445-8856-4c4f-9c6b-7e2b81509220.sql');
 
 const client = new Client({
-  user: 'postgres',
-  host: 'db.dshdcbcagsbwixxlkgmc.supabase.co',
+  user: 'postgres.mcvohdpjzihslxkpajqd',
+  host: 'aws-1-ap-southeast-1.pooler.supabase.com',
   database: 'postgres',
   password: 'Abuturab@3110',
-  port: 5432,
+  port: 6543,
   ssl: { rejectUnauthorized: false }
 });
 

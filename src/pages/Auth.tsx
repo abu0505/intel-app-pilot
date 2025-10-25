@@ -23,13 +23,14 @@ const Auth = () => {
     const password = formData.get("password") as string;
     const fullName = formData.get("fullName") as string;
 
-    const { error } = await supabase.auth.signUp({
+    const { data, error } = await supabase.auth.signUp({
       email,
       password,
       options: {
         data: {
           full_name: fullName,
         },
+        emailRedirectTo: `${window.location.origin}/auth/callback#`,
       },
     });
 
@@ -41,12 +42,17 @@ const Auth = () => {
         title: "Sign up failed",
         description: error.message,
       });
+    } else if (data?.user?.identities?.length === 0) {
+      toast({
+        variant: "destructive",
+        title: "Account exists",
+        description: "An account with this email already exists. Please sign in instead.",
+      });
     } else {
       toast({
-        title: "Account created!",
-        description: "Welcome to StudyAI. Let's start learning!",
+        title: "Verification email sent",
+        description: "Please check your email to verify your account before signing in.",
       });
-      navigate("/dashboard");
     }
   };
 
@@ -54,25 +60,39 @@ const Auth = () => {
     e.preventDefault();
     setLoading(true);
 
-    const formData = new FormData(e.currentTarget);
-    const email = formData.get("email") as string;
-    const password = formData.get("password") as string;
+    try {
+      const formData = new FormData(e.currentTarget);
+      const email = formData.get("email") as string;
+      const password = formData.get("password") as string;
 
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
-    });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
 
-    setLoading(false);
-
-    if (error) {
+      if (error) {
+        if (error.message.includes('Email not confirmed')) {
+          toast({
+            variant: "destructive",
+            title: "Email not verified",
+            description: "Please check your email and verify your account before signing in.",
+          });
+        } else {
+          toast({
+            variant: "destructive",
+            title: "Sign in failed",
+            description: error.message,
+          });
+        }
+      }
+    } catch (err) {
       toast({
         variant: "destructive",
         title: "Sign in failed",
-        description: error.message,
+        description: "An unexpected error occurred. Please try again.",
       });
-    } else {
-      navigate("/dashboard");
+    } finally {
+      setLoading(false);
     }
   };
 
