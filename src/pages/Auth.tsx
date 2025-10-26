@@ -4,15 +4,15 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Sparkles } from "lucide-react";
+import { Brain, Sparkles, Stars } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
   const [loading, setLoading] = useState(false);
+  const [isLogin, setIsLogin] = useState(true);
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -97,100 +97,113 @@ const Auth = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4" style={{ background: "var(--gradient-hero)" }}>
-      <div className="w-full max-w-md">
-        <div className="text-center mb-8">
-          <div className="inline-flex items-center justify-center w-16 h-16 rounded-2xl mb-4" style={{ background: "var(--gradient-primary)", boxShadow: "var(--shadow-glow)" }}>
-            <Brain className="w-8 h-8 text-white" />
+    <div className="relative min-h-screen flex">
+      <div className="absolute top-4 right-4 z-10">
+        <ThemeToggle />
+      </div>
+      {/* Left side - Hero Section */}
+      <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 p-12 flex-col justify-between">
+        <div className="flex items-center gap-3">
+          <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm">
+            <Brain className="w-7 h-7 text-white" />
           </div>
-          <h1 className="text-4xl font-bold text-white mb-2 flex items-center justify-center gap-2">
-            StudyAI
-            <Sparkles className="w-6 h-6 text-accent" />
-          </h1>
-          <p className="text-white/80">Your intelligent study companion</p>
+          <h1 className="text-2xl font-bold text-white">StudyAI</h1>
         </div>
+        <div>
+          <h2 className="text-5xl font-bold text-white mb-6">
+            Transform Your Study Materials Into Interactive Learning
+          </h2>
+          <p className="text-xl text-white/90 mb-8">
+            Upload PDFs, videos, or links and let AI create personalized quizzes and flashcards. Study smarter with spaced repetition and track your progress.
+          </p>
+          <div className="grid grid-cols-2 gap-4 text-white/90">
+            <div className="flex items-center gap-2">
+              <Stars className="w-5 h-5 text-white" />
+              <span>AI-Powered Generation</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Sparkles className="w-5 h-5 text-white" />
+              <span>Spaced Repetition</span>
+            </div>
+            <div className="flex items-center gap-2">
+              <Brain className="w-5 h-5 text-white" />
+              <span>Progress Tracking</span>
+            </div>
+          </div>
+        </div>
+        <div className="text-sm text-white/60">
+          © 2025 StudyAI. All rights reserved.
+        </div>
+      </div>
 
-        <Card className="border-0" style={{ boxShadow: "var(--shadow-medium)" }}>
-          <CardHeader>
-            <CardTitle>Welcome</CardTitle>
-            <CardDescription>Sign in to your account or create a new one</CardDescription>
-          </CardHeader>
-          <CardContent>
-            <Tabs defaultValue="signin">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="signin">Sign In</TabsTrigger>
-                <TabsTrigger value="signup">Sign Up</TabsTrigger>
-              </TabsList>
+      {/* Right side - Auth Form */}
+      <div className="w-full lg:w-1/2 flex items-center justify-center p-8 bg-background">
+        <div className="w-full max-w-md">
+          <div className="mb-8">
+            <h2 className="text-3xl font-bold mb-2">{isLogin ? "Login" : "Sign Up"}</h2>
+            <p className="text-muted-foreground">
+              {isLogin
+                ? "Welcome back! Please enter your details."
+                : "Create an account to get started."}
+            </p>
+          </div>
 
-              <TabsContent value="signin">
-                <form onSubmit={handleSignIn} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-email">Email</Label>
-                    <Input
-                      id="signin-email"
-                      name="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signin-password">Password</Label>
-                    <Input
-                      id="signin-password"
-                      name="password"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Signing in..." : "Sign In"}
-                  </Button>
-                </form>
-              </TabsContent>
+          <form onSubmit={isLogin ? handleSignIn : handleSignUp} className="space-y-4">
+            {!isLogin && (
+              <div className="space-y-2">
+                <Label htmlFor="fullName">Full Name</Label>
+                <Input
+                  id="fullName"
+                  name="fullName"
+                  type="text"
+                  placeholder="John Doe"
+                  required
+                  className="h-12"
+                />
+              </div>
+            )}
+            <div className="space-y-2">
+              <Label htmlFor="email">Email</Label>
+              <Input
+                id="email"
+                name="email"
+                type="email"
+                placeholder="your@email.com"
+                required
+                className="h-12"
+              />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="password">Password</Label>
+              <Input
+                id="password"
+                name="password"
+                type="password"
+                placeholder="••••••••"
+                required
+                minLength={6}
+                className="h-12"
+              />
+            </div>
+            <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
+              {loading
+                ? isLogin ? "Signing in..." : "Creating account..."
+                : isLogin ? "Login" : "Sign Up"}
+            </Button>
+          </form>
 
-              <TabsContent value="signup">
-                <form onSubmit={handleSignUp} className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-name">Full Name</Label>
-                    <Input
-                      id="signup-name"
-                      name="fullName"
-                      type="text"
-                      placeholder="John Doe"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-email">Email</Label>
-                    <Input
-                      id="signup-email"
-                      name="email"
-                      type="email"
-                      placeholder="your@email.com"
-                      required
-                    />
-                  </div>
-                  <div className="space-y-2">
-                    <Label htmlFor="signup-password">Password</Label>
-                    <Input
-                      id="signup-password"
-                      name="password"
-                      type="password"
-                      placeholder="••••••••"
-                      required
-                      minLength={6}
-                    />
-                  </div>
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Creating account..." : "Create Account"}
-                  </Button>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
+          <div className="mt-6 text-center text-sm">
+            <span className="text-muted-foreground">
+              {isLogin ? "Don't have an account? " : "Already have an account? "}
+            </span>
+            <button
+              onClick={() => setIsLogin(!isLogin)}
+              className="text-primary hover:underline font-medium"
+            >
+              {isLogin ? "Sign up" : "Login"}
+            </button>
+          </div>
+        </div>
       </div>
     </div>
   );
