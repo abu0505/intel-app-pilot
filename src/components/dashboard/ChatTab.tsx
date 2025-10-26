@@ -75,11 +75,16 @@ const ChatTab = () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
       setMessage("");
     },
-    onError: (error: Error) => {
+    onError: (error: Error & { context?: { error?: string } }) => {
+      console.error("Failed to send chat message", error);
+      const description =
+        error.message === "Edge Function returned a non-2xx status code"
+          ? error.context?.error ?? "Edge Function returned a non-2xx status code"
+          : error.message;
       toast({
         variant: "destructive",
         title: "Failed to send message",
-        description: error.message,
+        description,
       });
     },
   });

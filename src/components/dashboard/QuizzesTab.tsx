@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -9,8 +9,13 @@ import { useToast } from "@/hooks/use-toast";
 import { Plus, Brain, Trophy, ChevronRight } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
+import { useQuizzes } from "@/hooks/use-quizzes";
 
-const QuizzesTab = () => {
+type QuizzesTabProps = {
+  onBackToStudio?: () => void;
+};
+
+const QuizzesTab = ({ onBackToStudio }: QuizzesTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showGenerateForm, setShowGenerateForm] = useState(false);
@@ -18,47 +23,7 @@ const QuizzesTab = () => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  const { data: quizzes, isLoading } = useQuery({
-    queryKey: ["quizzes"],
-    queryFn: async () => {
-      const { data, error } = await supabase
-        .from("quizzes")
-        .select("*")
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const generateQuizMutation = useMutation({
-    mutationFn: async (formData: FormData) => {
-      const difficulty = formData.get("difficulty") as string;
-      const questionCount = parseInt(formData.get("questionCount") as string);
-
-      const { data, error } = await supabase.functions.invoke("generate-quiz", {
-        body: { difficulty, questionCount },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
-      toast({
-        title: "Quiz generated!",
-        description: "Your personalized quiz is ready.",
-      });
-      setShowGenerateForm(false);
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to generate quiz",
-        description: error.message,
-      });
-    },
-  });
+  const { quizzes, isLoading, generateQuizMutation } = useQuizzes();
 
   const submitQuizMutation = useMutation({
     mutationFn: async () => {
@@ -104,7 +69,28 @@ const QuizzesTab = () => {
   const handleGenerateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    generateQuizMutation.mutate(formData);
+    const difficulty = (formData.get("difficulty") as "easy" | "medium" | "hard") ?? "medium";
+    const questionCount = parseInt((formData.get("questionCount") as string) ?? "10", 10);
+
+    generateQuizMutation.mutate(
+      { difficulty, questionCount },
+      {
+        onSuccess: () => {
+          toast({
+            title: "Quiz generated!",
+            description: "Your personalized quiz is ready.",
+          });
+          setShowGenerateForm(false);
+        },
+        onError: (error: Error) => {
+          toast({
+            variant: "destructive",
+            title: "Failed to generate quiz",
+            description: error.message,
+          });
+        },
+      },
+    );
   };
 
   if (selectedQuiz) {
@@ -115,9 +101,16 @@ const QuizzesTab = () => {
     
     return (
       <div className="max-w-3xl mx-auto space-y-6">
-        <Button variant="outline" onClick={() => { setSelectedQuiz(null); setAnswers({}); setCurrentQuestionIndex(0); }}>
-          ← Back to Quizzes
-        </Button>
+        <div className="flex items-center justify-between">
+          <Button variant="outline" onClick={() => { setSelectedQuiz(null); setAnswers({}); setCurrentQuestionIndex(0); }}>
+            ← Back to Quizzes
+          </Button>
+          {onBackToStudio && (
+            <Button variant="ghost" onClick={() => onBackToStudio()}>
+              Back to Studio
+            </Button>
+          )}
+        </div>
 
         <Card>
           <CardHeader>
@@ -200,6 +193,11 @@ const QuizzesTab = () => {
 
   return (
     <div className="space-y-6">
+      {onBackToStudio && (
+        <Button variant="ghost" className="px-0" onClick={() => onBackToStudio()}>
+          ← Back to Studio
+        </Button>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-3xl font-bold">Your Quizzes</h2>

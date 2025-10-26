@@ -1,6 +1,4 @@
 import { useState } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,81 +7,27 @@ import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
 import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
-type Flashcard = {
-  id: string;
-  title: string;
-  cards: Array<{
-    front: string;
-    back: string;
-    difficulty: number;
-    category: string;
-  }>;
-  card_count: number;
-  times_studied: number;
-  average_retention_percentage: number;
+type FlashcardsTabProps = {
+  onBackToStudio?: () => void;
 };
 
-export default function FlashcardsTab() {
+export default function FlashcardsTab({ onBackToStudio }: FlashcardsTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [cardCount, setCardCount] = useState(15);
-  const [selectedFlashcard, setSelectedFlashcard] = useState<Flashcard | null>(null);
+  const [selectedFlashcard, setSelectedFlashcard] = useState<FlashcardSet | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
   const { toast } = useToast();
-  const queryClient = useQueryClient();
 
-  const { data: sources } = useQuery({
-    queryKey: ["sources"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("sources").select("*");
-      if (error) throw error;
-      return data;
-    },
-  });
-
-  const { data: flashcards, isLoading } = useQuery({
-    queryKey: ["flashcards"],
-    queryFn: async () => {
-      const { data, error } = await supabase.from("flashcards").select("*").order("created_at", { ascending: false });
-      if (error) throw error;
-      return data as unknown as Flashcard[];
-    },
-  });
-
-  const generateMutation = useMutation({
-    mutationFn: async () => {
-      if (!sources || sources.length === 0) throw new Error("No sources available");
-      const sourceIds = sources.map(s => s.id);
-      
-      const { data, error } = await supabase.functions.invoke("generate-flashcards", {
-        body: { sourceIds, cardCount },
-      });
-
-      if (error) throw error;
-      return data;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["flashcards"] });
-      setShowForm(false);
-      toast({ title: "Flashcards generated successfully!" });
-    },
-    onError: (error: Error) => {
-      toast({ title: "Error", description: error.message, variant: "destructive" });
-    },
-  });
-
-  const deleteMutation = useMutation({
-    mutationFn: async (id: string) => {
-      const { error } = await supabase.from("flashcards").delete().eq("id", id);
-      if (error) throw error;
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["flashcards"] });
-      setSelectedFlashcard(null);
-      toast({ title: "Flashcard set deleted" });
-    },
-  });
+  const {
+    flashcards,
+    isLoading,
+    sources,
+    generateFlashcardsMutation,
+    deleteFlashcardsMutation,
+  } = useFlashcards();
 
   const handleNextCard = () => {
     if (selectedFlashcard && currentCardIndex < selectedFlashcard.cards.length - 1) {
@@ -114,11 +58,35 @@ export default function FlashcardsTab() {
             <Button variant="outline" size="sm" onClick={() => setCurrentCardIndex(0)}>
               <RotateCcw className="h-4 w-4" />
             </Button>
-            <Button variant="destructive" size="sm" onClick={() => deleteMutation.mutate(selectedFlashcard.id)}>
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() =>
+                deleteFlashcardsMutation.mutate(selectedFlashcard.id, {
+                  onSuccess: () => {
+                    setSelectedFlashcard(null);
+                    setCurrentCardIndex(0);
+                    setIsFlipped(false);
+                    toast({ title: "Flashcard set deleted" });
+                  },
+                  onError: (error: Error) => {
+                    toast({ title: "Error", description: error.message, variant: "destructive" });
+                  },
+                })
+              }
+            >
               <Trash2 className="h-4 w-4" />
             </Button>
           </div>
         </div>
+
+        {onBackToStudio && (
+          <div className="flex justify-end">
+            <Button variant="ghost" onClick={() => onBackToStudio()}>
+              Back to Studio
+            </Button>
+          </div>
+        )}
 
         <Card>
           <CardHeader>
@@ -188,6 +156,11 @@ export default function FlashcardsTab() {
 
   return (
     <div className="space-y-6">
+      {onBackToStudio && (
+        <Button variant="ghost" className="px-0" onClick={() => onBackToStudio()}>
+          ← Back to Studio
+        </Button>
+      )}
       <div className="flex items-center justify-between">
         <div>
           <h2 className="text-2xl font-bold">Flashcards</h2>
@@ -218,8 +191,24 @@ export default function FlashcardsTab() {
               />
             </div>
             <div className="flex gap-2">
-              <Button onClick={() => generateMutation.mutate()} disabled={generateMutation.isPending || !sources?.length}>
-                {generateMutation.isPending ? "Generating..." : "Generate Flashcards"}
+              <Button
+                onClick={() =>
+                  generateFlashcardsMutation.mutate(
+                    { cardCount },
+                    {
+                      onSuccess: () => {
+                        setShowForm(false);
+                        toast({ title: "Flashcards generated successfully!" });
+                      },
+                      onError: (error: Error) => {
+                        toast({ title: "Error", description: error.message, variant: "destructive" });
+                      },
+                    },
+                  )
+                }
+                disabled={generateFlashcardsMutation.isPending || !sources?.length}
+              >
+                {generateFlashcardsMutation.isPending ? "Generating..." : "Generate Flashcards"}
               </Button>
               <Button variant="outline" onClick={() => setShowForm(false)}>
                 Cancel

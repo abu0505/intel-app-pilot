@@ -4,6 +4,7 @@ import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
 serve(async (req) => {
@@ -34,24 +35,96 @@ serve(async (req) => {
 
     const content = sources.map(s => s.content).join("\n\n");
 
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${Deno.env.get("LOVABLE_API_KEY")}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [{
-          role: "user",
-          content: `Generate ${questionCount} ${difficulty} multiple-choice questions from this content. Return ONLY valid JSON array with format: [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A"}]\n\n${content.substring(0, 3000)}`
-        }],
-      }),
-    });
+    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
+    const googleApiKey = Deno.env.get("GOOGLE_AI_API_KEY");
 
-    const data = await response.json();
-    const questionsJson = data.choices[0].message.content.replace(/```json\n?|\n?```/g, "").trim();
-    const questions = JSON.parse(questionsJson);
+    let questions: unknown;
+
+    if (googleApiKey) {
+      const geminiModels = [
+        "gemini-2.0-flash",
+        "gemini-2.0-flash-lite",
+        "gemini-1.5-flash",
+      ];
+
+      let googleResponse: Response | null = null;
+      let googleData: any = null;
+      let successful = false;
+      let lastError: string | undefined;
+
+      for (const googleModel of geminiModels) {
+        googleResponse = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${googleModel}:generateContent?key=${googleApiKey}`,
+          {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              contents: [
+                {
+                  role: "user",
+                  parts: [
+                    {
+                      text: `Generate ${questionCount} ${difficulty} multiple-choice questions from this content. Return ONLY valid JSON array with format: [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A"}]
+
+${content.substring(0, 3000)}`,
+                    },
+                  ],
+                },
+              ],
+            }),
+          },
+        );
+
+        googleData = await googleResponse.json();
+        if (googleResponse.ok) {
+          successful = true;
+          break;
+        }
+
+        lastError = googleData.error?.message ?? `Gemini request failed for model ${googleModel}`;
+      }
+
+      if (!successful || !googleData) {
+        throw new Error(lastError ?? "Gemini API request failed");
+      }
+
+      const textResponse = (googleData.candidates?.[0]?.content?.parts ?? [])
+        .map((part: { text?: string }) => part.text ?? "")
+        .join("\n")
+        .trim();
+
+      const questionsJson = textResponse.replace(/```json\n?|\n?```/g, "").trim();
+      questions = JSON.parse(questionsJson);
+    } else {
+      if (!lovableApiKey) {
+        throw new Error("Missing AI provider credentials");
+      }
+
+      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${lovableApiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "google/gemini-2.5-flash",
+          messages: [{
+            role: "user",
+            content: `Generate ${questionCount} ${difficulty} multiple-choice questions from this content. Return ONLY valid JSON array with format: [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A"}]
+
+${content.substring(0, 3000)}`,
+          }],
+        }),
+      });
+
+      const data = await response.json();
+      if (!response.ok) {
+        throw new Error(data.error?.message ?? "Lovable AI request failed");
+      }
+
+      const questionsJson = data.choices[0].message.content.replace(/```json\n?|\n?```/g, "").trim();
+      questions = JSON.parse(questionsJson);
+    }
 
     const { data: quiz } = await supabase.from("quizzes").insert({
       user_id: user.id,

@@ -8,8 +8,7 @@ import { Brain, LogOut, Sparkles } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import SourcesTab from "@/components/dashboard/SourcesTab";
 import ChatTab from "@/components/dashboard/ChatTab";
-import QuizzesTab from "@/components/dashboard/QuizzesTab";
-import FlashcardsTab from "@/components/dashboard/FlashcardsTab";
+import StudyTab from "@/components/dashboard/StudyTab";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -86,11 +85,10 @@ const Dashboard = () => {
 
       <main className="container mx-auto px-4 py-8">
         <Tabs defaultValue="sources" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 max-w-2xl mx-auto mb-8">
+          <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto mb-8">
             <TabsTrigger value="sources">Sources</TabsTrigger>
             <TabsTrigger value="chat">AI Chat</TabsTrigger>
-            <TabsTrigger value="quizzes">Quizzes</TabsTrigger>
-            <TabsTrigger value="flashcards">Flashcards</TabsTrigger>
+            <TabsTrigger value="study">Studio</TabsTrigger>
           </TabsList>
 
           <TabsContent value="sources">
@@ -101,12 +99,8 @@ const Dashboard = () => {
             <ChatTab />
           </TabsContent>
 
-          <TabsContent value="quizzes">
-            <QuizzesTab />
-          </TabsContent>
-
-          <TabsContent value="flashcards">
-            <FlashcardsTab />
+          <TabsContent value="study">
+            <StudyTab />
           </TabsContent>
         </Tabs>
       </main>

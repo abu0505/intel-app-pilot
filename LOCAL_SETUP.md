@@ -62,26 +62,34 @@ For the AI features to work, you need to set up secrets in your Supabase project
    - Go to **Authentication** → **Settings**
    - Disable "Enable email confirmations"
 
-## Step 6: Deploy Edge Functions (Optional for local testing)
+## Step 6: Deploy Edge Functions
 
-If you want to test edge functions locally:
+These functions must be deployed at least once before they are available in your Supabase project. Run this from the project root after installing the Supabase CLI:
 
 ```bash
-# Install Supabase CLI
+# Install Supabase CLI if you don't already have it
 npm install -g supabase
 
-# Login to Supabase
+# Authenticate and link to the project
 supabase login
-
-# Link to your project
 supabase link --project-ref mcvohdpjzihslxkpajqd
 
-# Deploy functions
+# Deploy each function (first run creates it, subsequent runs update it)
 supabase functions deploy ai-chat
 supabase functions deploy generate-quiz
 supabase functions deploy generate-flashcards
 supabase functions deploy generate-embeddings
 ```
+
+If you prefer a one-liner, you can deploy all functions sequentially with:
+
+```bash
+for fn in ai-chat generate-quiz generate-flashcards generate-embeddings; do
+  supabase functions deploy "$fn" --project-ref mcvohdpjzihslxkpajqd || break
+done
+```
+
+Deploying ensures Supabase creates the functions before any redeployment task runs.
 
 ## Step 7: Start Local Development
 
