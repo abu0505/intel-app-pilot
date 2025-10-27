@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -13,9 +13,10 @@ import { useQuizzes } from "@/hooks/use-quizzes";
 
 type QuizzesTabProps = {
   onBackToStudio?: () => void;
+  initialQuizId?: string;
 };
 
-const QuizzesTab = ({ onBackToStudio }: QuizzesTabProps) => {
+const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showGenerateForm, setShowGenerateForm] = useState(false);
@@ -24,6 +25,18 @@ const QuizzesTab = ({ onBackToStudio }: QuizzesTabProps) => {
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
   const { quizzes, isLoading, generateQuizMutation } = useQuizzes();
+
+  useEffect(() => {
+    if (!initialQuizId || !quizzes?.length) return;
+    if (selectedQuiz?.id === initialQuizId) return;
+
+    const match = quizzes.find((quiz) => quiz.id === initialQuizId);
+    if (match) {
+      setSelectedQuiz(match);
+      setCurrentQuestionIndex(0);
+      setAnswers({});
+    }
+  }, [initialQuizId, quizzes, selectedQuiz?.id]);
 
   const submitQuizMutation = useMutation({
     mutationFn: async () => {
@@ -98,18 +111,22 @@ const QuizzesTab = ({ onBackToStudio }: QuizzesTabProps) => {
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     const allAnswered = questions.every((_: any, idx: number) => answers[idx]);
-    
+
     return (
       <div className="max-w-3xl mx-auto space-y-6">
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => { setSelectedQuiz(null); setAnswers({}); setCurrentQuestionIndex(0); }}>
-            ← Back to Quizzes
+          <Button
+            variant="ghost"
+            className="hover:text-black hover:bg-primary/10 dark:text-primary-foreground dark:hover:text-primary-foreground dark:hover:bg-primary/20"
+            onClick={() => {
+              setSelectedQuiz(null);
+              setAnswers({});
+              setCurrentQuestionIndex(0);
+              onBackToStudio?.();
+            }}
+          >
+            ← Back to Studio
           </Button>
-          {onBackToStudio && (
-            <Button variant="ghost" onClick={() => onBackToStudio()}>
-              Back to Studio
-            </Button>
-          )}
         </div>
 
         <Card>

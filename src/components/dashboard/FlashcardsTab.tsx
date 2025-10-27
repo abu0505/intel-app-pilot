@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -11,9 +11,10 @@ import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
 type FlashcardsTabProps = {
   onBackToStudio?: () => void;
+  initialFlashcardId?: string;
 };
 
-export default function FlashcardsTab({ onBackToStudio }: FlashcardsTabProps) {
+export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: FlashcardsTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [cardCount, setCardCount] = useState(15);
   const [selectedFlashcard, setSelectedFlashcard] = useState<FlashcardSet | null>(null);
@@ -28,6 +29,18 @@ export default function FlashcardsTab({ onBackToStudio }: FlashcardsTabProps) {
     generateFlashcardsMutation,
     deleteFlashcardsMutation,
   } = useFlashcards();
+
+  useEffect(() => {
+    if (!initialFlashcardId || !flashcards?.length) return;
+    if (selectedFlashcard?.id === initialFlashcardId) return;
+
+    const match = flashcards.find((flashcard) => flashcard.id === initialFlashcardId);
+    if (match) {
+      setSelectedFlashcard(match);
+      setCurrentCardIndex(0);
+      setIsFlipped(false);
+    }
+  }, [initialFlashcardId, flashcards, selectedFlashcard?.id]);
 
   const handleNextCard = () => {
     if (selectedFlashcard && currentCardIndex < selectedFlashcard.cards.length - 1) {
@@ -50,9 +63,18 @@ export default function FlashcardsTab({ onBackToStudio }: FlashcardsTabProps) {
     return (
       <div className="space-y-6">
         <div className="flex items-center justify-between">
-          <Button variant="outline" onClick={() => { setSelectedFlashcard(null); setCurrentCardIndex(0); setIsFlipped(false); }}>
+          <Button
+            variant="ghost"
+            className="hover:text-black hover:bg-primary/10 dark:text-primary-foreground dark:hover:text-primary-foreground dark:hover:bg-primary/20"
+            onClick={() => {
+              setSelectedFlashcard(null);
+              setCurrentCardIndex(0);
+              setIsFlipped(false);
+              onBackToStudio?.();
+            }}
+          >
             <ChevronLeft className="mr-2 h-4 w-4" />
-            Back to Flashcards
+            Back to Studio
           </Button>
           <div className="flex gap-2">
             <Button variant="outline" size="sm" onClick={() => setCurrentCardIndex(0)}>
@@ -79,14 +101,6 @@ export default function FlashcardsTab({ onBackToStudio }: FlashcardsTabProps) {
             </Button>
           </div>
         </div>
-
-        {onBackToStudio && (
-          <div className="flex justify-end">
-            <Button variant="ghost" onClick={() => onBackToStudio()}>
-              Back to Studio
-            </Button>
-          </div>
-        )}
 
         <Card>
           <CardHeader>

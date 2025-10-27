@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -7,7 +8,7 @@ const corsHeaders = {
   "Access-Control-Allow-Methods": "POST, OPTIONS",
 };
 
-serve(async (req) => {
+serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
@@ -38,7 +39,11 @@ serve(async (req) => {
       .eq("user_id", user.id)
       .limit(5);
 
-    const context = sources?.map(s => `Source: ${s.source_name}\n${s.content}`).join("\n\n") || "";
+    const context = (sources ?? [])
+      .map((s: { source_name: string | null; content: string | null }) =>
+        `Source: ${s.source_name ?? "Untitled"}\n${s.content ?? ""}`,
+      )
+      .join("\n\n");
 
     const googleApiKey = Deno.env.get("GOOGLE_AI_API_KEY");
     const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");

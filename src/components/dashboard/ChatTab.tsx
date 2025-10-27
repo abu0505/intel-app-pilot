@@ -5,9 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Bot, User, Sparkles } from "lucide-react";
+import { Send, Bot, User, Sparkles, MessageSquare, Trash2, Plus } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import MarkdownMessage from "@/components/dashboard/MarkdownMessage";
 
 interface Message {
   id: string;
@@ -17,12 +20,55 @@ interface Message {
   created_at: string;
 }
 
+interface ChatSession {
+  session_id: string;
+  created_at: string;
+  first_message: string;
+}
+
 const ChatTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [message, setMessage] = useState("");
-  const [sessionId] = useState(() => crypto.randomUUID());
+  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  // Fetch chat sessions
+  const { data: chatSessions } = useQuery({
+    queryKey: ["chat-sessions"],
+    queryFn: async () => {
+      const { data: userData } = await supabase.auth.getUser();
+      if (!userData.user) throw new Error("User not authenticated");
+
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+
+      const { data, error } = await supabase
+        .from("chat_histories")
+        .select("session_id, created_at, content")
+        .eq("user_id", userData.user.id)
+        .eq("message_type", "user")
+        .gte("created_at", oneWeekAgo.toISOString())
+        .order("created_at", { ascending: false });
+
+      if (error) throw error;
+
+      // Group by session and get first message
+      const sessionMap = new Map<string, ChatSession>();
+      data.forEach((msg) => {
+        if (!sessionMap.has(msg.session_id)) {
+          sessionMap.set(msg.session_id, {
+            session_id: msg.session_id,
+            created_at: msg.created_at,
+            first_message: msg.content.substring(0, 50) + (msg.content.length > 50 ? "..." : ""),
+          });
+        }
+      });
+
+      return Array.from(sessionMap.values());
+    },
+  });
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ["chat-messages", sessionId],
@@ -93,116 +139,234 @@ const ChatTab = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
+  const deleteChatMutation = useMutation({
+    mutationFn: async (session_id: string) => {
+      const { error } = await supabase
+        .from("chat_histories")
+        .delete()
+        .eq("session_id", session_id);
+
+      if (error) throw error;
+    },
+    onSuccess: (_, deletedSessionId) => {
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
+      if (sessionId === deletedSessionId) {
+        setSessionId(crypto.randomUUID());
+      }
+      toast({ title: "Chat deleted successfully" });
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete chat",
+        description: error.message,
+      });
+    },
+  });
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
     sendMessageMutation.mutate(message);
   };
 
+  const createNewChat = () => {
+    setSessionId(crypto.randomUUID());
+    setMessage("");
+  };
+
+  const switchToSession = (session_id: string) => {
+    setSessionId(session_id);
+  };
+
   return (
-    <div className="max-w-4xl mx-auto space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold flex items-center gap-2">
-          AI Study Assistant
-          <Sparkles className="w-6 h-6 text-accent" />
-        </h2>
-        <p className="text-muted-foreground mt-1">Ask questions about your uploaded sources</p>
-      </div>
-
-      <Card style={{ boxShadow: "var(--shadow-medium)" }}>
-        <CardContent className="p-0">
-          <div className="h-[500px] overflow-y-auto p-6 space-y-4">
-            {isLoading ? (
-              <div className="flex items-center justify-center h-full">
-                <div className="animate-pulse">Loading chat...</div>
-              </div>
-            ) : messages?.length === 0 ? (
-              <div className="flex flex-col items-center justify-center h-full text-center">
-                <Bot className="w-16 h-16 text-muted-foreground mb-4" />
-                <p className="text-lg font-semibold mb-2">Start a conversation</p>
-                <p className="text-muted-foreground max-w-md">
-                  I have access to all your uploaded sources. Ask me anything about your learning materials!
-                </p>
-              </div>
-            ) : (
-              messages?.map((msg) => (
-                <div
-                  key={msg.id}
-                  className={`flex gap-3 ${msg.message_type === "user" ? "justify-end" : ""}`}
-                >
-                  {msg.message_type === "assistant" && (
-                    <div
-                      className="w-8 h-8 rounded-lg flex items-center justify-center flex-shrink-0"
-                      style={{ background: "var(--gradient-primary)" }}
-                    >
-                      <Bot className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                  <div
-                    className={`max-w-[80%] rounded-xl p-4 ${
-                      msg.message_type === "user"
-                        ? "bg-primary text-primary-foreground"
-                        : "bg-muted"
-                    }`}
-                  >
-                    {msg.content === "..." ? (
-                      <div className="space-y-2">
-                        <Skeleton className="h-4 w-full" />
-                        <Skeleton className="h-4 w-3/4" />
-                        <Skeleton className="h-4 w-5/6" />
-                      </div>
-                    ) : (
-                      <>
-                        <p className="whitespace-pre-wrap">{msg.content}</p>
-                        {msg.sources_referenced && msg.sources_referenced.length > 0 && (
-                          <div className="mt-2 flex flex-wrap gap-1">
-                            {msg.sources_referenced.map((sourceId, idx) => (
-                              <Badge key={idx} variant="secondary" className="text-xs">
-                                Source {idx + 1}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                      </>
-                    )}
-                  </div>
-                  {msg.message_type === "user" && (
-                    <div className="w-8 h-8 rounded-lg bg-accent flex items-center justify-center flex-shrink-0">
-                      <User className="w-4 h-4 text-white" />
-                    </div>
-                  )}
-                </div>
-              ))
-            )}
-            <div ref={messagesEndRef} />
-          </div>
-
-          <div className="border-t p-4">
-            <form onSubmit={handleSubmit} className="flex gap-2">
-              <Textarea
-                value={message}
-                onChange={(e) => setMessage(e.target.value)}
-                placeholder="Ask a question about your sources..."
-                className="min-h-[60px] resize-none"
-                onKeyDown={(e) => {
-                  if (e.key === "Enter" && !e.shiftKey) {
-                    e.preventDefault();
-                    handleSubmit(e);
-                  }
-                }}
-              />
+    <div className="flex h-[calc(100vh-12rem)] gap-4">
+      {/* Sidebar */}
+      {sidebarOpen && (
+        <Card className="w-72 flex-shrink-0">
+          <CardContent className="p-4 h-full flex flex-col">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold flex items-center gap-2">
+                <MessageSquare className="w-4 h-4" />
+                Recent Chats
+              </h3>
               <Button
-                type="submit"
-                size="icon"
-                className="h-[60px] w-[60px]"
-                disabled={!message.trim() || sendMessageMutation.isPending}
+                variant="ghost"
+                size="sm"
+                onClick={createNewChat}
+                className="h-8 w-8 p-0"
               >
-                <Send className="w-5 h-5" />
+                <Plus className="w-4 h-4" />
               </Button>
-            </form>
-          </div>
-        </CardContent>
-      </Card>
+            </div>
+            <Separator className="mb-4" />
+            <ScrollArea className="flex-1">
+              <div className="space-y-2">
+                {chatSessions?.map((session) => (
+                  <div
+                    key={session.session_id}
+                    className={`group relative p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
+                      session.session_id === sessionId
+                        ? "bg-primary/10 border-primary"
+                        : "hover:bg-muted"
+                    }`}
+                    onClick={() => switchToSession(session.session_id)}
+                  >
+                    <p className="text-sm font-medium line-clamp-2 pr-6">
+                      {session.first_message}
+                    </p>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      {new Date(session.created_at).toLocaleDateString()}
+                    </p>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        deleteChatMutation.mutate(session.session_id);
+                      }}
+                    >
+                      <Trash2 className="w-3 h-3" />
+                    </Button>
+                  </div>
+                ))}
+                {(!chatSessions || chatSessions.length === 0) && (
+                  <div className="text-center py-8 text-sm text-muted-foreground">
+                    No recent chats
+                  </div>
+                )}
+              </div>
+            </ScrollArea>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Main Chat Area */}
+      <div className="flex-1 flex flex-col">
+        <div className="mb-4">
+          <h2 className="text-3xl font-bold flex items-center gap-2">
+            AI Study Assistant
+            <Sparkles className="w-6 h-6 text-primary" />
+          </h2>
+          <p className="text-muted-foreground mt-1">Ask questions about your uploaded sources</p>
+        </div>
+
+        <Card className="flex-1 flex flex-col">
+          <CardContent className="p-0 flex-1 flex flex-col">
+            <ScrollArea className="flex-1 p-6">
+              <div className="space-y-4">
+                {isLoading ? (
+                  <div className="flex items-center justify-center py-12">
+                    <div className="flex flex-col items-center gap-3">
+                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                      <p className="text-sm text-muted-foreground">Loading chat...</p>
+                    </div>
+                  </div>
+                ) : messages?.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center py-12 text-center">
+                    <div className="rounded-full bg-gradient-to-br from-primary/20 to-accent/20 p-6 mb-4">
+                      <Bot className="w-12 h-12 text-primary" />
+                    </div>
+                    <h3 className="text-xl font-semibold mb-2">Start a conversation</h3>
+                    <p className="text-muted-foreground max-w-md mb-4">
+                      I have access to all your uploaded sources. Ask me anything about your learning materials!
+                    </p>
+                    <div className="flex flex-wrap gap-2 justify-center">
+                      <Badge variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => setMessage("Summarize my recent notes")}>
+                        Summarize my notes
+                      </Badge>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => setMessage("Create a study plan")}>
+                        Create study plan
+                      </Badge>
+                      <Badge variant="outline" className="cursor-pointer hover:bg-muted" onClick={() => setMessage("Explain key concepts")}>
+                        Explain concepts
+                      </Badge>
+                    </div>
+                  </div>
+                ) : (
+                  messages?.map((msg) => (
+                    <div
+                      key={msg.id}
+                      className={`flex gap-3 animate-in fade-in slide-in-from-bottom-2 ${
+                        msg.message_type === "user" ? "justify-end" : ""
+                      }`}
+                    >
+                      {msg.message_type === "assistant" && (
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <Bot className="w-5 h-5 text-primary-foreground" />
+                        </div>
+                      )}
+                      <div
+                        className={`max-w-[90%] rounded-2xl p-4 shadow-sm ${
+                          msg.message_type === "user"
+                            ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground"
+                            : "bg-muted/50 backdrop-blur"
+                        }`}
+                      >
+                        {msg.content === "..." ? (
+                          <div className="space-y-2">
+                            <Skeleton className="h-4 w-full" />
+                            <Skeleton className="h-4 w-3/4" />
+                            <Skeleton className="h-4 w-5/6" />
+                          </div>
+                        ) : (
+                          <>
+                            <MarkdownMessage content={msg.content} />
+                            {msg.sources_referenced && msg.sources_referenced.length > 0 && (
+                              <div className="mt-3 pt-3 border-t border-border/50 flex flex-wrap gap-1.5">
+                                {msg.sources_referenced.map((sourceId, idx) => (
+                                  <Badge key={idx} variant="secondary" className="text-xs">
+                                    📄 Source {idx + 1}
+                                  </Badge>
+                                ))}
+                              </div>
+                            )}
+                          </>
+                        )}
+                      </div>
+                      {msg.message_type === "user" && (
+                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center flex-shrink-0 shadow-sm">
+                          <User className="w-5 h-5 text-white" />
+                        </div>
+                      )}
+                    </div>
+                  ))
+                )}
+                <div ref={messagesEndRef} />
+              </div>
+            </ScrollArea>
+
+            <div className="border-t bg-background p-4">
+              <form onSubmit={handleSubmit} className="flex gap-3">
+                <Textarea
+                  value={message}
+                  onChange={(e) => setMessage(e.target.value)}
+                  placeholder="Ask a question about your sources..."
+                  className="min-h-[64px] resize-none rounded-xl border-2 focus-visible:ring-1"
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter" && !e.shiftKey) {
+                      e.preventDefault();
+                      handleSubmit(e);
+                    }
+                  }}
+                />
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-[64px] w-[64px] rounded-xl shadow-lg"
+                  disabled={!message.trim() || sendMessageMutation.isPending}
+                >
+                  <Send className="w-5 h-5" />
+                </Button>
+              </form>
+              <p className="text-xs text-muted-foreground mt-2 text-center">
+                Press Enter to send, Shift+Enter for new line
+              </p>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 };
