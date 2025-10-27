@@ -64,8 +64,15 @@ const Index = () => {
       </header>
 
       {/* Hero Section */}
-      <section className="container mx-auto px-4 pt-32 pb-20">
-        <div className="mx-auto max-w-4xl text-center">
+      <section className="relative container mx-auto px-4 pt-32 pb-20 overflow-hidden">
+        {/* Background Light Effects */}
+        <div className="absolute inset-0 overflow-hidden pointer-events-none">
+          <div className="absolute top-1/4 left-1/4 w-96 h-96 bg-primary/30 rounded-full blur-[128px] animate-pulse" />
+          <div className="absolute top-1/3 right-1/4 w-96 h-96 bg-accent/20 rounded-full blur-[128px] animate-pulse" style={{ animationDelay: '1s' }} />
+          <div className="absolute bottom-1/4 left-1/3 w-[500px] h-[500px] bg-primary/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '0.5s' }} />
+        </div>
+        
+        <div className="mx-auto max-w-4xl text-center relative z-10">
           <div className="mb-6 inline-flex items-center gap-2 rounded-full border bg-muted/50 px-4 py-2 text-sm">
             <Sparkles className="h-4 w-4 text-primary" />
             <span>AI-Powered Learning Platform</span>
@@ -84,16 +91,16 @@ const Index = () => {
 
           {/* Input Field */}
           <div className="mx-auto max-w-2xl mb-12">
-            <div className="flex gap-2 rounded-lg border-2 border-primary/20 bg-card p-2 shadow-lg hover:border-primary/40 transition-colors">
+            <div className="flex gap-2 rounded-xl border-2 border-primary/20 bg-card p-3 shadow-2xl hover:border-primary/40 transition-all hover:shadow-primary/10">
               <Input
                 type="text"
                 placeholder="What would you like to study today? (e.g., Quantum Physics, Spanish Verbs...)"
                 value={inputValue}
                 onChange={(e) => setInputValue(e.target.value)}
                 onKeyDown={(e) => e.key === "Enter" && handleQuickStart()}
-                className="border-0 bg-transparent text-base focus-visible:ring-0 focus-visible:ring-offset-0"
+                className="border-0 bg-transparent text-base h-14 focus-visible:ring-0 focus-visible:ring-offset-0"
               />
-              <Button onClick={handleQuickStart} size="lg" className="px-8">
+              <Button onClick={handleQuickStart} size="lg" className="px-8 h-14">
                 Start Learning
                 <ArrowRight className="ml-2 h-5 w-5" />
               </Button>
