@@ -6,7 +6,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Eye, EyeOff, Sparkles, Stars } from "lucide-react";
+import { ArrowLeft, Brain, Eye, EyeOff, Sparkles, Stars } from "lucide-react";
 
 const Auth = () => {
   const navigate = useNavigate();
@@ -99,6 +99,17 @@ const Auth = () => {
 
   return (
     <div className="relative min-h-screen flex">
+      <div className="absolute top-4 left-4 z-10">
+        <Button
+          variant="ghost"
+          size="icon"
+          onClick={() => navigate("/")}
+          className="h-9 w-9"
+        >
+          <ArrowLeft className="h-5 w-5" />
+          <span className="sr-only">Back to home</span>
+        </Button>
+      </div>
       <div className="absolute top-4 right-4 z-10">
         <ThemeToggle />
       </div>
