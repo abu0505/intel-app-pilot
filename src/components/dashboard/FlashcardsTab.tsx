@@ -5,7 +5,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
+import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2, Share2 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
@@ -53,6 +53,23 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
     if (currentCardIndex > 0) {
       setCurrentCardIndex(currentCardIndex - 1);
       setIsFlipped(false);
+    }
+  };
+
+  const handleShareFlashcard = async (flashcardId: string) => {
+    const shareUrl = `${window.location.origin}/dashboard?flashcard=${flashcardId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share this link to let others study your flashcards.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy link",
+        description: "Please try again.",
+      });
     }
   };
 
@@ -259,14 +276,30 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
           {flashcards.map((flashcard) => (
             <Card
               key={flashcard.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setSelectedFlashcard(flashcard)}
+              className="hover:shadow-lg transition-shadow"
             >
               <CardHeader>
-                <CardTitle>{flashcard.title}</CardTitle>
-                <CardDescription>{flashcard.card_count} cards</CardDescription>
+                <div className="flex items-start justify-between">
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => setSelectedFlashcard(flashcard)}
+                  >
+                    <CardTitle>{flashcard.title}</CardTitle>
+                    <CardDescription>{flashcard.card_count} cards</CardDescription>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShareFlashcard(flashcard.id);
+                    }}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
               </CardHeader>
-              <CardContent>
+              <CardContent onClick={() => setSelectedFlashcard(flashcard)} className="cursor-pointer">
                 <div className="flex items-center gap-4 text-sm text-muted-foreground">
                   <span>Studied: {flashcard.times_studied} times</span>
                   {flashcard.times_studied > 0 && (
