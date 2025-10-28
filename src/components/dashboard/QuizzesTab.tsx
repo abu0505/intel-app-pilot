@@ -318,8 +318,7 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
             return (
               <Card
                 key={quiz.id}
-                className="group relative cursor-pointer overflow-hidden border border-border/60 bg-background/80 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl"
-                onClick={() => setSelectedQuiz(quiz)}
+                className="group relative overflow-hidden border border-border/60 bg-background/80 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl"
                 style={{ boxShadow: "var(--shadow-soft)" }}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
@@ -327,7 +326,7 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
 
                 <CardHeader className="relative z-10 space-y-4 pb-6">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => setSelectedQuiz(quiz)}>
                       <div className="rounded-full bg-primary/15 p-2 text-primary">
                         <Sparkles className="h-4 w-4" />
                       </div>
@@ -389,7 +388,7 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground cursor-pointer" onClick={() => setSelectedQuiz(quiz)}>
                     <span>Tap to open</span>
                     <span className="flex items-center gap-1 font-semibold text-primary">
                       Start quiz
