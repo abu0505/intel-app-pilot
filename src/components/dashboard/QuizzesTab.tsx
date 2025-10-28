@@ -6,7 +6,11 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
+<<<<<<< HEAD
 import { Plus, Brain, Trophy, ChevronRight, Sparkles, Layers, History, Target } from "lucide-react";
+=======
+import { Plus, Brain, Trophy, ChevronRight, Share2 } from "lucide-react";
+>>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useQuizzes } from "@/hooks/use-quizzes";
@@ -78,6 +82,23 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
       setAnswers({});
     },
   });
+
+  const handleShareQuiz = async (quizId: string) => {
+    const shareUrl = `${window.location.origin}/dashboard?quiz=${quizId}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share this link to let others take your quiz.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy link",
+        description: "Please try again.",
+      });
+    }
+  };
 
   const handleGenerateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -294,6 +315,7 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
             </CardContent>
           </Card>
         ) : (
+<<<<<<< HEAD
           quizzes?.map((quiz) => {
             const hasStats =
               quiz.times_taken > 0 && Number.isFinite(quiz.average_score_percentage);
@@ -370,6 +392,50 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
               </Card>
             );
           })
+=======
+          quizzes?.map((quiz) => (
+            <Card
+              key={quiz.id}
+              className="hover:shadow-lg transition-shadow"
+              style={{ boxShadow: "var(--shadow-soft)" }}
+            >
+              <CardHeader>
+                <div className="flex items-start justify-between">
+                  <div 
+                    className="flex-1 cursor-pointer"
+                    onClick={() => setSelectedQuiz(quiz)}
+                  >
+                    <CardTitle className="text-lg line-clamp-2">{quiz.title}</CardTitle>
+                    <div className="flex items-center gap-2 mt-2">
+                      <Badge variant="secondary">{quiz.difficulty_level}</Badge>
+                      <Badge variant="outline">{quiz.question_count} questions</Badge>
+                    </div>
+                  </div>
+                  <Button
+                    variant="ghost"
+                    size="icon"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleShareQuiz(quiz.id);
+                    }}
+                  >
+                    <Share2 className="w-4 h-4" />
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent onClick={() => setSelectedQuiz(quiz)} className="cursor-pointer">
+                <p className="text-sm text-muted-foreground">
+                  Created {new Date(quiz.created_at).toLocaleDateString()}
+                </p>
+                {quiz.times_taken > 0 && (
+                  <p className="text-sm text-muted-foreground mt-1">
+                    Avg. Score: {quiz.average_score_percentage.toFixed(0)}%
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          ))
+>>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
         )}
       </div>
     </div>

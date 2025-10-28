@@ -20,3 +20,9 @@ verify_jwt = false
 
 [functions.change-password]
 verify_jwt = true
+
+[functions.youtube-transcript]
+verify_jwt = true
+
+[functions.generate-summary]
+verify_jwt = true

@@ -33,12 +33,25 @@ const SourcesTab = () => {
   const addSourceMutation = useMutation({
     mutationFn: async (formData: FormData) => {
       const sourceName = formData.get("sourceName") as string;
-      const sourceUrl = formData.get("sourceUrl") as string;
-      const content = formData.get("content") as string;
+      let sourceUrl = formData.get("sourceUrl") as string;
+      let content = formData.get("content") as string;
       const description = formData.get("description") as string;
 
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("User not authenticated");
+
+      // Auto-fetch YouTube transcript if it's a YouTube URL
+      if (sourceType === "youtube" && sourceUrl && !content.trim()) {
+        const { data: transcriptData, error: transcriptError } = await supabase.functions.invoke(
+          "youtube-transcript",
+          { body: { url: sourceUrl } }
+        );
+
+        if (transcriptError) throw new Error("Failed to fetch YouTube transcript: " + transcriptError.message);
+        if (transcriptData?.transcript) {
+          content = transcriptData.transcript;
+        }
+      }
 
       const { data, error } = await supabase
         .from("sources")
@@ -59,6 +72,12 @@ const SourcesTab = () => {
       // Generate embeddings in the background
       await supabase.functions.invoke("generate-embeddings", {
         body: { sourceId: data.id },
+      });
+
+      // Generate AI summary and add to chat
+      const sessionId = crypto.randomUUID();
+      await supabase.functions.invoke("generate-summary", {
+        body: { sourceId: data.id, sessionId },
       });
 
       return data;
@@ -170,13 +189,19 @@ const SourcesTab = () => {
               )}
 
               <div className="space-y-2">
-                <Label htmlFor="content">Content *</Label>
+                <Label htmlFor="content">
+                  Content {sourceType === "youtube" ? "(optional - auto-fetched from video)" : "*"}
+                </Label>
                 <Textarea
                   id="content"
                   name="content"
-                  placeholder="Paste your study material here..."
+                  placeholder={
+                    sourceType === "youtube"
+                      ? "Leave empty to auto-fetch transcript from YouTube..."
+                      : "Paste your study material here..."
+                  }
                   rows={8}
-                  required
+                  required={sourceType !== "youtube"}
                 />
               </div>
 
