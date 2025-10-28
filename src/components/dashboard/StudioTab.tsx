@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { GlobalWorkerOptions, getDocument, version } from "pdfjs-dist";
@@ -32,6 +32,7 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sourceType, setSourceType] = useState<string>("text");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
+  const [activeSourceType, setActiveSourceType] = useState<string | "all">("all");
   const [view, setView] = useState<StudyView>(defaultView);
   const [selectedFlashcardId, setSelectedFlashcardId] = useState<string | undefined>();
   const [selectedQuizId, setSelectedQuizId] = useState<string | undefined>();
@@ -126,6 +127,36 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
       return data;
     },
   });
+
+  const availableSourceTypes = useMemo(() => {
+    if (!sources) {
+      return [];
+    }
+
+    const types = new Set<string>();
+    for (const source of sources) {
+      if (source.source_type) {
+        types.add(source.source_type);
+      }
+    }
+    return Array.from(types);
+  }, [sources]);
+
+  const filteredSources = useMemo(() => {
+    if (!sources) {
+      return [];
+    }
+
+    if (activeSourceType === "all") {
+      return sources;
+    }
+
+    return sources.filter((source) => source.source_type === activeSourceType);
+  }, [sources, activeSourceType]);
+
+  useEffect(() => {
+    setSelectedSources((prev) => prev.filter((id) => filteredSources.some((source) => source.id === id)));
+  }, [filteredSources]);
 
   const loadPdfDocument = async (arrayBuffer: ArrayBuffer) => {
     try {
@@ -478,20 +509,46 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
               </Button>
             </div>
 
+            <div className="flex items-center gap-2 mb-3">
+              <Button
+                variant={activeSourceType === "all" ? "secondary" : "ghost"}
+                size="icon"
+                className="h-9 w-9"
+                onClick={() => setActiveSourceType("all")}
+              >
+                <Folder className="h-4 w-4" />
+              </Button>
+              {availableSourceTypes.map((type) => {
+                const isActive = activeSourceType === type;
+                return (
+                  <Button
+                    key={type}
+                    variant={isActive ? "secondary" : "ghost"}
+                    size="icon"
+                    className="h-9 w-9"
+                    onClick={() => setActiveSourceType(type)}
+                    aria-label={`Filter ${type} sources`}
+                  >
+                    {getSourceIcon(type, isActive)}
+                  </Button>
+                );
+              })}
+            </div>
+
             {isLoading ? (
               <div className="space-y-2 mt-2">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div key={i} className="h-10 bg-muted/30 rounded-lg animate-pulse" />
                 ))}
               </div>
-            ) : sources?.length === 0 ? (
+            ) : filteredSources.length === 0 ? (
               <div className="text-center py-8 text-sm text-muted-foreground">
                 <FileText className="h-8 w-8 mx-auto mb-2 opacity-50" />
                 No sources yet
               </div>
             ) : (
               <div className="space-y-[3px]">
-                {sources?.map((source) => {
+                {filteredSources.map((source) => {
                   const isSelected = selectedSources.includes(source.id);
                   return (
                     <Tooltip key={source.id}>
