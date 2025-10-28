@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-<<<<<<< HEAD
 import {
   Brain,
   Plus,
@@ -17,10 +16,8 @@ import {
   Layers,
   History,
   Target,
+  Share2,
 } from "lucide-react";
-=======
-import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2, Share2 } from "lucide-react";
->>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
@@ -288,7 +285,6 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-<<<<<<< HEAD
           {flashcards.map((flashcard) => {
             const hasRetention =
               flashcard.times_studied > 0 && Number.isFinite(flashcard.average_retention_percentage);
@@ -313,9 +309,22 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
                         <CardDescription className="text-sm">AI generated flashcards</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-                      {flashcard.card_count} cards
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="hover:text-primary"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareFlashcard(flashcard.id);
+                        }}
+                      >
+                        <Share2 className="h-4 w-4" />
+                      </Button>
+                      <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                        {flashcard.card_count} cards
+                      </Badge>
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -365,44 +374,6 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
               </Card>
             );
           })}
-=======
-          {flashcards.map((flashcard) => (
-            <Card
-              key={flashcard.id}
-              className="hover:shadow-lg transition-shadow"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={() => setSelectedFlashcard(flashcard)}
-                  >
-                    <CardTitle>{flashcard.title}</CardTitle>
-                    <CardDescription>{flashcard.card_count} cards</CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShareFlashcard(flashcard.id);
-                    }}
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent onClick={() => setSelectedFlashcard(flashcard)} className="cursor-pointer">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Studied: {flashcard.times_studied} times</span>
-                  {flashcard.times_studied > 0 && (
-                    <span>Retention: {flashcard.average_retention_percentage.toFixed(0)}%</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
->>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
         </div>
       )}
     </div>
