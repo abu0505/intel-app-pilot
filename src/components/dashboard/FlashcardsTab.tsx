@@ -5,7 +5,6 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-<<<<<<< HEAD
 import {
   Brain,
   Plus,
@@ -17,10 +16,8 @@ import {
   Layers,
   History,
   Target,
+  Share2,
 } from "lucide-react";
-=======
-import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2, Share2 } from "lucide-react";
->>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
@@ -288,7 +285,6 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-<<<<<<< HEAD
           {flashcards.map((flashcard) => {
             const hasRetention =
               flashcard.times_studied > 0 && Number.isFinite(flashcard.average_retention_percentage);
@@ -296,15 +292,14 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
             return (
               <Card
                 key={flashcard.id}
-                className="group relative cursor-pointer overflow-hidden border border-border/60 bg-background/80 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl"
-                onClick={() => setSelectedFlashcard(flashcard)}
+                className="group relative overflow-hidden border border-border/60 bg-background/80 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl"
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="absolute right-0 top-0 h-32 w-32 -translate-y-16 translate-x-12 rounded-full bg-primary/20 blur-3xl" />
 
                 <CardHeader className="relative z-10 space-y-4 pb-6">
                   <div className="flex items-start justify-between gap-3">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => setSelectedFlashcard(flashcard)}>
                       <div className="rounded-full bg-primary/15 p-2 text-primary">
                         <Sparkles className="h-4 w-4" />
                       </div>
@@ -313,9 +308,21 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
                         <CardDescription className="text-sm">AI generated flashcards</CardDescription>
                       </div>
                     </div>
-                    <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-                      {flashcard.card_count} cards
-                    </Badge>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                        {flashcard.card_count} cards
+                      </Badge>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleShareFlashcard(flashcard.id);
+                        }}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardHeader>
 
@@ -354,7 +361,7 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
                     </div>
                   </div>
 
-                  <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                  <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground cursor-pointer" onClick={() => setSelectedFlashcard(flashcard)}>
                     <span>Tap to open</span>
                     <span className="flex items-center gap-1 font-semibold text-primary">
                       Study now
@@ -365,44 +372,6 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
               </Card>
             );
           })}
-=======
-          {flashcards.map((flashcard) => (
-            <Card
-              key={flashcard.id}
-              className="hover:shadow-lg transition-shadow"
-            >
-              <CardHeader>
-                <div className="flex items-start justify-between">
-                  <div 
-                    className="flex-1 cursor-pointer"
-                    onClick={() => setSelectedFlashcard(flashcard)}
-                  >
-                    <CardTitle>{flashcard.title}</CardTitle>
-                    <CardDescription>{flashcard.card_count} cards</CardDescription>
-                  </div>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleShareFlashcard(flashcard.id);
-                    }}
-                  >
-                    <Share2 className="w-4 h-4" />
-                  </Button>
-                </div>
-              </CardHeader>
-              <CardContent onClick={() => setSelectedFlashcard(flashcard)} className="cursor-pointer">
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Studied: {flashcard.times_studied} times</span>
-                  {flashcard.times_studied > 0 && (
-                    <span>Retention: {flashcard.average_retention_percentage.toFixed(0)}%</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
->>>>>>> fe0f62f997939ad6482c563e5d11e5d459384e33
         </div>
       )}
     </div>
