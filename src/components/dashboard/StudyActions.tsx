@@ -8,7 +8,15 @@ import { QuizCustomizationDialog } from "@/components/dashboard/QuizCustomizatio
 import { FlashcardCustomizationDialog } from "@/components/dashboard/FlashcardCustomizationDialog";
 import { useQuizzes } from "@/hooks/use-quizzes";
 import { useFlashcards } from "@/hooks/use-flashcards";
-import { Loader2, Pencil, Sparkles, Layers } from "lucide-react";
+import { Loader2, Pencil, Sparkles, Layers, BookOpen, Brain, MoreHorizontal, Trash2, Edit3 } from "lucide-react";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
 
 const ACTION_CARDS = [
   {
@@ -33,16 +41,85 @@ export function StudyActions({
   onOpenQuiz?: (quizId?: string) => void;
 }) {
   const { toast } = useToast();
-  const { generateQuizMutation, quizzes, isLoading: isQuizzesLoading } = useQuizzes();
+  const {
+    generateQuizMutation,
+    quizzes,
+    isLoading: isQuizzesLoading,
+    renameQuizMutation,
+    deleteQuizMutation,
+  } = useQuizzes();
   const {
     generateFlashcardsMutation,
     sources,
     flashcards,
     isLoading: isFlashcardsLoading,
+    renameFlashcardsMutation,
+    deleteFlashcardsMutation,
   } = useFlashcards();
 
   const [isQuizDialogOpen, setQuizDialogOpen] = useState(false);
   const [isFlashcardDialogOpen, setFlashcardDialogOpen] = useState(false);
+  const [flashcardToRename, setFlashcardToRename] = useState<{ id: string; title: string } | null>(null);
+  const [quizToRename, setQuizToRename] = useState<{ id: string; title: string } | null>(null);
+  const [renameValue, setRenameValue] = useState("");
+
+  const closeRenameDialog = () => {
+    setFlashcardToRename(null);
+    setQuizToRename(null);
+    setRenameValue("");
+  };
+
+  const handleRenameSubmit = () => {
+    if (flashcardToRename) {
+      renameFlashcardsMutation.mutate(
+        { id: flashcardToRename.id, title: renameValue },
+        {
+          onSuccess: () => {
+            toast({ title: "Flashcard renamed" });
+            closeRenameDialog();
+          },
+          onError: (error: Error) => {
+            toast({ title: "Unable to rename", description: error.message, variant: "destructive" });
+          },
+        },
+      );
+    } else if (quizToRename) {
+      renameQuizMutation.mutate(
+        { id: quizToRename.id, title: renameValue },
+        {
+          onSuccess: () => {
+            toast({ title: "Quiz renamed" });
+            closeRenameDialog();
+          },
+          onError: (error: Error) => {
+            toast({ title: "Unable to rename", description: error.message, variant: "destructive" });
+          },
+        },
+      );
+    }
+  };
+
+  const handleDeleteFlashcard = (id: string) => {
+    deleteFlashcardsMutation.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Flashcard deleted" });
+      },
+      onError: (error: Error) => {
+        toast({ title: "Unable to delete", description: error.message, variant: "destructive" });
+      },
+    });
+  };
+
+  const handleDeleteQuiz = (id: string) => {
+    deleteQuizMutation.mutate(id, {
+      onSuccess: () => {
+        toast({ title: "Quiz deleted" });
+      },
+      onError: (error: Error) => {
+        toast({ title: "Unable to delete", description: error.message, variant: "destructive" });
+      },
+    });
+  };
 
   const defaultSourceIds = sources?.map((source: any) => source.id) ?? [];
 
@@ -191,19 +268,66 @@ export function StudyActions({
             {flashcards.slice(0, 4).map((flashcard) => (
               <Card
                 key={flashcard.id}
-                className={`transition-shadow hover:shadow-lg ${onOpenFlashcards ? "cursor-pointer" : ""}`}
+                className={`group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl ${onOpenFlashcards ? "cursor-pointer" : ""}`}
                 onClick={onOpenFlashcards ? () => onOpenFlashcards(flashcard.id) : undefined}
               >
-                <CardHeader>
-                  <CardTitle className="line-clamp-2 text-base">{flashcard.title}</CardTitle>
-                  <CardDescription>{flashcard.card_count} cards</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Studied {flashcard.times_studied}×</span>
-                    <span>{new Date(flashcard.created_at).toLocaleDateString()}</span>
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+                
+                <CardHeader className="relative z-10 space-y-3 pb-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-lg bg-primary/15 p-2.5 text-primary">
+                        <BookOpen className="h-4 w-4" />
+                      </div>
+                      <div className="flex-1 space-y-1">
+                        <CardTitle className="line-clamp-2 text-base font-semibold leading-tight">{flashcard.title}</CardTitle>
+                        <CardDescription className="text-xs">{flashcard.card_count} cards</CardDescription>
+                      </div>
+                    </div>
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full text-muted-foreground"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-44"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setFlashcardToRename({ id: flashcard.id, title: flashcard.title });
+                            setRenameValue(flashcard.title);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteFlashcard(flashcard.id);
+                          }}
+                          className="flex items-center gap-2 text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                </CardContent>
+                </CardHeader>
+                
+                <CardContent className="relative z-10 pt-0" />
               </Card>
             ))}
           </div>
@@ -244,25 +368,72 @@ export function StudyActions({
             {quizzes.slice(0, 4).map((quiz) => (
               <Card
                 key={quiz.id}
-                className={`transition-shadow hover:shadow-lg ${onOpenQuiz ? "cursor-pointer" : ""}`}
+                className={`group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl ${onOpenQuiz ? "cursor-pointer" : ""}`}
                 onClick={onOpenQuiz ? () => onOpenQuiz(quiz.id) : undefined}
               >
-                <CardHeader>
-                  <CardTitle className="line-clamp-2 text-base">{quiz.title}</CardTitle>
-                  <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                    <Badge variant="secondary" className="capitalize">
-                      {quiz.difficulty_level}
-                    </Badge>
-                    <Badge variant="outline">{quiz.question_count} questions</Badge>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex items-center justify-between text-sm text-muted-foreground">
-                    <span>Taken {quiz.times_taken}×</span>
-                    <span>{new Date(quiz.created_at).toLocaleDateString()}</span>
-                  </div>
-                </CardContent>
-              </Card>
+                  <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
+                  <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
+                  
+                  <CardHeader className="relative z-10 space-y-3 pb-4">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex items-center gap-3">
+                        <div className="rounded-lg bg-primary/15 p-2.5 text-primary">
+                          <Brain className="h-4 w-4" />
+                        </div>
+                        <div className="flex-1 space-y-1">
+                          <CardTitle className="line-clamp-2 text-base font-semibold leading-tight">{quiz.title}</CardTitle>
+                          <div className="flex items-center gap-2">
+                            <Badge variant="secondary" className="h-5 rounded-full px-2 text-[10px] font-medium uppercase">
+                              {quiz.difficulty_level}
+                            </Badge>
+                            <span className="text-xs text-muted-foreground">{quiz.question_count} questions</span>
+                          </div>
+                        </div>
+                      </div>
+                      <DropdownMenu>
+                        <DropdownMenuTrigger asChild>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 rounded-full text-muted-foreground"
+                          onClick={(event) => event.stopPropagation()}
+                        >
+                          <MoreHorizontal className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent
+                        align="end"
+                        className="w-44"
+                        onClick={(event) => event.stopPropagation()}
+                      >
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            setQuizToRename({ id: quiz.id, title: quiz.title });
+                            setRenameValue(quiz.title);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Edit3 className="h-4 w-4" />
+                          Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleDeleteQuiz(quiz.id);
+                          }}
+                          className="flex items-center gap-2 text-destructive focus:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                          Delete
+                        </DropdownMenuItem>
+                        </DropdownMenuContent>
+                      </DropdownMenu>
+                    </div>
+                  </CardHeader>
+                  
+                  <CardContent className="relative z-10 pt-0" />
+                </Card>
             ))}
           </div>
         ) : (
@@ -282,6 +453,27 @@ export function StudyActions({
         open={isFlashcardDialogOpen}
         onOpenChange={setFlashcardDialogOpen}
       />
+
+      <Dialog open={!!flashcardToRename || !!quizToRename} onOpenChange={(open) => !open && closeRenameDialog()}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{flashcardToRename ? "Rename flashcard set" : "Rename quiz"}</DialogTitle>
+          </DialogHeader>
+          <Input
+            value={renameValue}
+            onChange={(event) => setRenameValue(event.target.value)}
+            placeholder="Enter a new title"
+          />
+          <DialogFooter>
+            <Button variant="outline" onClick={closeRenameDialog}>
+              Cancel
+            </Button>
+            <Button onClick={handleRenameSubmit} disabled={renameFlashcardsMutation.isPending || renameQuizMutation.isPending}>
+              {(renameFlashcardsMutation.isPending || renameQuizMutation.isPending) ? "Saving..." : "Save"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -91,6 +91,25 @@ export function useFlashcards() {
     },
   });
 
+  const renameFlashcardsMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) {
+        throw new Error("Title cannot be empty");
+      }
+
+      const { error } = await supabase
+        .from("flashcards")
+        .update({ title: trimmedTitle })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["flashcards"] });
+    },
+  });
+
   const deleteFlashcardsMutation = useMutation({
     mutationFn: async (id: string) => {
       const { error } = await supabase.from("flashcards").delete().eq("id", id);
@@ -110,6 +129,7 @@ export function useFlashcards() {
     sources: sourcesQuery.data,
     isSourcesLoading: sourcesQuery.isLoading,
     generateFlashcardsMutation,
+    renameFlashcardsMutation,
     deleteFlashcardsMutation,
   };
 }

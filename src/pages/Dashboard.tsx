@@ -14,9 +14,8 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
-import SourcesTab from "@/components/dashboard/SourcesTab";
 import ChatTab from "@/components/dashboard/ChatTab";
-import StudyTab from "@/components/dashboard/StudyTab";
+import StudioTab from "@/components/dashboard/StudioTab";
 
 const Dashboard = () => {
   const navigate = useNavigate();
@@ -63,9 +62,9 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <Tabs defaultValue="studio" className="min-h-screen bg-background">
       <header className="border-b" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <div className="container mx-auto px-4 py-4 flex items-center justify-between">
+        <div className="container mx-auto px-4 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
           <div className="flex items-center gap-3">
             <div
               className="w-10 h-10 rounded-xl flex items-center justify-center"
@@ -105,30 +104,24 @@ const Dashboard = () => {
             </DropdownMenu>
           </div>
         </div>
+        <div className="container mx-auto px-4 pb-4">
+          <TabsList className="grid w-full max-w-md grid-cols-2 gap-2 rounded-xl border bg-muted/40 p-1">
+            <TabsTrigger value="studio">Studio</TabsTrigger>
+            <TabsTrigger value="chat">AI Chat</TabsTrigger>
+          </TabsList>
+        </div>
       </header>
 
       <main className="container mx-auto px-4 py-8">
-        <Tabs defaultValue="sources" className="w-full">
-          <TabsList className="grid w-full grid-cols-3 max-w-2xl mx-auto mb-8">
-            <TabsTrigger value="sources">Sources</TabsTrigger>
-            <TabsTrigger value="chat">AI Chat</TabsTrigger>
-            <TabsTrigger value="study">Studio</TabsTrigger>
-          </TabsList>
+        <TabsContent value="studio">
+          <StudioTab />
+        </TabsContent>
 
-          <TabsContent value="sources">
-            <SourcesTab />
-          </TabsContent>
-
-          <TabsContent value="chat">
-            <ChatTab />
-          </TabsContent>
-
-          <TabsContent value="study">
-            <StudyTab />
-          </TabsContent>
-        </Tabs>
+        <TabsContent value="chat">
+          <ChatTab />
+        </TabsContent>
       </main>
-    </div>
+    </Tabs>
   );
 };
 

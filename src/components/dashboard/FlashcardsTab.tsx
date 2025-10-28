@@ -5,7 +5,18 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useToast } from "@/hooks/use-toast";
-import { Brain, Plus, ChevronLeft, ChevronRight, RotateCcw, Trash2 } from "lucide-react";
+import {
+  Brain,
+  Plus,
+  ChevronLeft,
+  ChevronRight,
+  RotateCcw,
+  Trash2,
+  Sparkles,
+  Layers,
+  History,
+  Target,
+} from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
@@ -256,26 +267,82 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
         </Card>
       ) : (
         <div className="grid gap-4 md:grid-cols-2">
-          {flashcards.map((flashcard) => (
-            <Card
-              key={flashcard.id}
-              className="cursor-pointer hover:shadow-lg transition-shadow"
-              onClick={() => setSelectedFlashcard(flashcard)}
-            >
-              <CardHeader>
-                <CardTitle>{flashcard.title}</CardTitle>
-                <CardDescription>{flashcard.card_count} cards</CardDescription>
-              </CardHeader>
-              <CardContent>
-                <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                  <span>Studied: {flashcard.times_studied} times</span>
-                  {flashcard.times_studied > 0 && (
-                    <span>Retention: {flashcard.average_retention_percentage.toFixed(0)}%</span>
-                  )}
-                </div>
-              </CardContent>
-            </Card>
-          ))}
+          {flashcards.map((flashcard) => {
+            const hasRetention =
+              flashcard.times_studied > 0 && Number.isFinite(flashcard.average_retention_percentage);
+
+            return (
+              <Card
+                key={flashcard.id}
+                className="group relative cursor-pointer overflow-hidden border border-border/60 bg-background/80 shadow-sm transition-all hover:-translate-y-1 hover:shadow-2xl"
+                onClick={() => setSelectedFlashcard(flashcard)}
+              >
+                <div className="absolute inset-0 bg-gradient-to-br from-primary/10 via-transparent to-primary/5 opacity-0 transition-opacity group-hover:opacity-100" />
+                <div className="absolute right-0 top-0 h-32 w-32 -translate-y-16 translate-x-12 rounded-full bg-primary/20 blur-3xl" />
+
+                <CardHeader className="relative z-10 space-y-4 pb-6">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="rounded-full bg-primary/15 p-2 text-primary">
+                        <Sparkles className="h-4 w-4" />
+                      </div>
+                      <div className="space-y-1">
+                        <CardTitle className="text-lg font-semibold leading-tight">{flashcard.title}</CardTitle>
+                        <CardDescription className="text-sm">AI generated flashcards</CardDescription>
+                      </div>
+                    </div>
+                    <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                      {flashcard.card_count} cards
+                    </Badge>
+                  </div>
+                </CardHeader>
+
+                <CardContent className="relative z-10 space-y-4 pt-0">
+                  <div className="grid gap-3 text-sm sm:grid-cols-3">
+                    <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/80 px-3 py-3 backdrop-blur-sm">
+                      <div className="rounded-lg bg-primary/15 p-2 text-primary">
+                        <Layers className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Cards</p>
+                        <p className="text-base font-semibold">{flashcard.card_count}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/80 px-3 py-3 backdrop-blur-sm">
+                      <div className="rounded-lg bg-primary/15 p-2 text-primary">
+                        <History className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Sessions</p>
+                        <p className="text-base font-semibold">{flashcard.times_studied}</p>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3 rounded-xl border border-border/50 bg-background/80 px-3 py-3 backdrop-blur-sm">
+                      <div className="rounded-lg bg-primary/15 p-2 text-primary">
+                        <Target className="h-4 w-4" />
+                      </div>
+                      <div>
+                        <p className="text-xs uppercase tracking-wide text-muted-foreground">Retention</p>
+                        <p className="text-base font-semibold">
+                          {hasRetention ? `${flashcard.average_retention_percentage.toFixed(0)}%` : "—"}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between text-xs uppercase tracking-wide text-muted-foreground">
+                    <span>Tap to open</span>
+                    <span className="flex items-center gap-1 font-semibold text-primary">
+                      Study now
+                      <ChevronRight className="h-4 w-4" />
+                    </span>
+                  </div>
+                </CardContent>
+              </Card>
+            );
+          })}
         </div>
       )}
     </div>

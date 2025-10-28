@@ -48,6 +48,35 @@ export function useQuizzes() {
     },
   });
 
+  const renameQuizMutation = useMutation({
+    mutationFn: async ({ id, title }: { id: string; title: string }) => {
+      const trimmedTitle = title.trim();
+      if (!trimmedTitle) {
+        throw new Error("Title cannot be empty");
+      }
+
+      const { error } = await supabase
+        .from("quizzes")
+        .update({ title: trimmedTitle })
+        .eq("id", id);
+
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+    },
+  });
+
+  const deleteQuizMutation = useMutation({
+    mutationFn: async (id: string) => {
+      const { error } = await supabase.from("quizzes").delete().eq("id", id);
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["quizzes"] });
+    },
+  });
+
   return {
     quizzes: quizzesQuery.data,
     isLoading: quizzesQuery.isLoading,
@@ -55,5 +84,7 @@ export function useQuizzes() {
     error: quizzesQuery.error,
     refetch: quizzesQuery.refetch,
     generateQuizMutation,
+    renameQuizMutation,
+    deleteQuizMutation,
   };
 }
