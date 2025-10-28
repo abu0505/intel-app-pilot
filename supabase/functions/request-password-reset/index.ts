@@ -1,3 +1,4 @@
+/// <reference path="../types/esm.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
@@ -134,7 +135,7 @@ serve(async (req) => {
               </div>
               <div class="content">
                 <p>Hello,</p>
-                <p>We received a request to reset your password for your StudyAI account. Click the button below to create a new password:</p>
+                <p>We received a request to reset your password for your Nexon AI account. Click the button below to create a new password:</p>
                 <div style="text-align: center;">
                   <a href="${resetUrl}" class="button">Reset Password</a>
                 </div>
@@ -148,7 +149,7 @@ serve(async (req) => {
                 <p>For security reasons, this password reset link can only be used once.</p>
               </div>
               <div class="footer">
-                <p>© 2025 StudyAI. All rights reserved.</p>
+                <p>© 2025 Nexon AI. All rights reserved.</p>
                 <p>This is an automated message, please do not reply to this email.</p>
               </div>
             </div>

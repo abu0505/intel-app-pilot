@@ -5,7 +5,7 @@
 ### Step 1: Apply Database Migration
 ```bash
 # Navigate to your project directory
-cd "c:\D drive D\College Detailed Projects\ai web app\lovable\intel-app-pilot"
+cd path/to/intel-app-pilot
 
 # Push the migration to your Supabase database
 supabase db push

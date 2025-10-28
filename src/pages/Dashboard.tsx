@@ -2,25 +2,19 @@ import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
-import { Brain, LogOut, Sparkles, Settings } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu";
+import { Brain, Sparkles, Menu } from "lucide-react";
 import ChatTab from "@/components/dashboard/ChatTab";
 import StudioTab from "@/components/dashboard/StudioTab";
+import { CollapsibleSidebar } from "@/components/dashboard/CollapsibleSidebar";
+import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
 
-const Dashboard = () => {
+function DashboardContent() {
   const navigate = useNavigate();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const { currentView } = useDashboard();
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -50,6 +44,14 @@ const Dashboard = () => {
     navigate("/auth");
   };
 
+  const toggleMobileSidebar = () => {
+    setIsMobileSidebarOpen((prev) => !prev);
+  };
+
+  const closeMobileSidebar = () => {
+    setIsMobileSidebarOpen(false);
+  };
+
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -62,66 +64,64 @@ const Dashboard = () => {
   }
 
   return (
-    <Tabs defaultValue="studio" className="min-h-screen bg-background">
-      <header className="border-b" style={{ boxShadow: "var(--shadow-soft)" }}>
-        <div className="container mx-auto px-4 py-4 flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            <div
-              className="w-10 h-10 rounded-xl flex items-center justify-center"
-              style={{ background: "var(--gradient-primary)" }}
+    <div className="min-h-screen bg-background flex">
+      {/* Collapsible Sidebar */}
+      <CollapsibleSidebar
+        onSignOut={handleSignOut}
+        isMobileOpen={isMobileSidebarOpen}
+        onMobileClose={closeMobileSidebar}
+      />
+
+      {/* Main Content Area */}
+      <div className="flex-1 flex flex-col min-w-0">
+        {/* Minimal Header */}
+        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30">
+          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
+            {/* Mobile hamburger */}
+            <Button
+              variant="ghost"
+              size="icon"
+              className="md:hidden"
+              onClick={toggleMobileSidebar}
+              aria-label="Toggle menu"
             >
-              <Brain className="w-6 h-6 text-white" />
-            </div>
-            <div>
-              <h1 className="text-2xl font-bold flex items-center gap-2">
-                StudyAI
-                <Sparkles className="w-5 h-5 text-accent" />
-              </h1>
-              <p className="text-xs text-muted-foreground">Welcome back, {user?.user_metadata?.full_name || "Student"}!</p>
-            </div>
-          </div>
-          <div className="flex items-center gap-2">
-            <ThemeToggle />
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <Settings className="w-4 h-4 mr-2" />
-                  Account
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-56">
-                <DropdownMenuLabel>My Account</DropdownMenuLabel>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={() => navigate("/change-password")}>
-                  Change Password
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem onClick={handleSignOut} className="text-red-600">
-                  <LogOut className="w-4 h-4 mr-2" />
-                  Sign Out
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          </div>
-        </div>
-        <div className="container mx-auto px-4 pb-4">
-          <TabsList className="grid w-full max-w-md grid-cols-2 gap-2 rounded-xl border bg-muted/40 p-1">
-            <TabsTrigger value="studio">Studio</TabsTrigger>
-            <TabsTrigger value="chat">AI Chat</TabsTrigger>
-          </TabsList>
-        </div>
-      </header>
+              <Menu className="w-5 h-5" />
+            </Button>
 
-      <main className="container mx-auto px-4 py-8">
-        <TabsContent value="studio">
-          <StudioTab />
-        </TabsContent>
+            {/* Logo/Brand */}
+            <div className="flex items-center gap-3">
+              <img
+                src="/nexon-logo.svg"
+                alt="Nexon AI logo"
+                className="w-9 h-9"
+              />
+              <div>
+                <h1 className="text-xl font-bold flex items-center gap-2">
+                  Nexon AI
+                  <Sparkles className="w-4 h-4 text-accent" />
+                </h1>
+              </div>
+            </div>
 
-        <TabsContent value="chat">
-          <ChatTab />
-        </TabsContent>
-      </main>
-    </Tabs>
+            {/* Spacer for mobile to center logo */}
+            <div className="w-10 md:hidden" />
+          </div>
+        </header>
+
+        {/* Main Content */}
+        <main className="flex-1 container mx-auto px-4 py-6 overflow-auto">
+          {currentView === "chat" ? <ChatTab /> : <StudioTab />}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+const Dashboard = () => {
+  return (
+    <DashboardProvider>
+      <DashboardContent />
+    </DashboardProvider>
   );
 };
 

@@ -1,73 +1,80 @@
-# Welcome to your Lovable project
+# Intel App Pilot
 
-## Project info
+Intel App Pilot is an AI-assisted study companion that helps learners generate quizzes, flashcards, summaries, and chat responses from their uploaded sources.
 
-**URL**: https://lovable.dev/projects/ebfab440-e141-4a52-848f-6cc3ad1dc384
+## Tech Stack
 
-## How can I edit this code?
+- Vite + React + TypeScript
+- shadcn/ui + Tailwind CSS
+- Supabase (database, auth, edge functions)
+- Google Gemini APIs for AI-assisted content generation
 
-There are several ways of editing your application.
+## Getting Started
 
-**Use Lovable**
+### Prerequisites
 
-Simply visit the [Lovable Project](https://lovable.dev/projects/ebfab440-e141-4a52-848f-6cc3ad1dc384) and start prompting.
+- Node.js 20+
+- npm or bun (project uses npm lockfile)
+- Supabase project with service role key and URL
+- Google AI Studio API key (Gemini)
 
-Changes made via Lovable will be committed automatically to this repo.
-
-**Use your preferred IDE**
-
-If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
-
-The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
-
-Follow these steps:
+### Installation
 
 ```sh
-# Step 1: Clone the repository using the project's Git URL.
-git clone <YOUR_GIT_URL>
+git clone <REPO_URL>
+cd intel-app-pilot
+npm install
+```
 
-# Step 2: Navigate to the project directory.
-cd <YOUR_PROJECT_NAME>
+Create a `.env` file based on `.env.example` (or update the provided values) with your Supabase credentials and Google AI key.
 
-# Step 3: Install the necessary dependencies.
-npm i
+### Development
 
-# Step 4: Start the development server with auto-reloading and an instant preview.
+```sh
 npm run dev
 ```
 
-**Edit a file directly in GitHub**
+The app runs at `http://localhost:5173` by default.
 
-- Navigate to the desired file(s).
-- Click the "Edit" button (pencil icon) at the top right of the file view.
-- Make your changes and commit the changes.
+### Building for Production
 
-**Use GitHub Codespaces**
+```sh
+npm run build
+npm run preview
+```
 
-- Navigate to the main page of your repository.
-- Click on the "Code" button (green button) near the top right.
-- Select the "Codespaces" tab.
-- Click on "New codespace" to launch a new Codespace environment.
-- Edit files directly within the Codespace and commit and push your changes once you're done.
+## Supabase Edge Functions
 
-## What technologies are used for this project?
+Edge functions live under `supabase/functions/` and power AI features (quizzes, flashcards, chat, summaries). Deploy them with the Supabase CLI:
 
-This project is built with:
+```sh
+supabase functions deploy generate-quiz
+supabase functions deploy generate-flashcards
+supabase functions deploy generate-summary
+supabase functions deploy ai-chat
+```
 
-- Vite
-- TypeScript
-- React
-- shadcn-ui
-- Tailwind CSS
+Refer to `PASSWORD_MANAGEMENT.md` and `SETUP_PASSWORD_SYSTEM.md` for the password reset/change flow.
 
-## How can I deploy this project?
+## Testing & Linting
 
-Simply open [Lovable](https://lovable.dev/projects/ebfab440-e141-4a52-848f-6cc3ad1dc384) and click on Share -> Publish.
+```sh
+npm run lint
+```
 
-## Can I connect a custom domain to my Lovable project?
+_Additional automated tests can be added under `src/__tests__/`._
 
-Yes, you can!
+## Project Structure
 
-To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+```
+src/
+  components/
+  contexts/
+  hooks/
+  pages/
+supabase/
+  functions/
+  migrations/
+```
 
-Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)
+Feel free to extend the project with new study tools or integrations as needed.

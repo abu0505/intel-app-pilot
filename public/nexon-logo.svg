@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 240 240" role="img" aria-label="Nexon AI logo">
+  <defs>
+    <linearGradient id="outer-ring" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f3f4f6" />
+      <stop offset="100%" stop-color="#1f2937" />
+    </linearGradient>
+    <linearGradient id="arc-light" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#f8fafc" />
+      <stop offset="100%" stop-color="#8e9cb4" />
+    </linearGradient>
+    <linearGradient id="arc-mid" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#d4d9e5" />
+      <stop offset="100%" stop-color="#5f6e85" />
+    </linearGradient>
+    <linearGradient id="arc-dark" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#9ca3af" />
+      <stop offset="100%" stop-color="#1f2937" />
+    </linearGradient>
+  </defs>
+
+  <circle cx="120" cy="120" r="108" fill="none" stroke="url(#outer-ring)" stroke-width="8" />
+
+  <path d="M120 28 A92 92 0 0 1 212 120" fill="none" stroke="url(#arc-light)" stroke-width="18" stroke-linecap="round" />
+  <path d="M212 120 A92 92 0 0 1 120 212" fill="none" stroke="url(#arc-mid)" stroke-width="18" stroke-linecap="round" />
+  <path d="M120 212 A92 92 0 0 1 28 120" fill="none" stroke="url(#arc-dark)" stroke-width="18" stroke-linecap="round" />
+
+  <circle cx="208" cy="120" r="10" fill="url(#arc-light)" />
+  <circle cx="120" cy="212" r="10" fill="url(#arc-mid)" />
+  <circle cx="32" cy="120" r="10" fill="url(#arc-dark)" />
+</svg>

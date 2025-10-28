@@ -38,7 +38,6 @@ serve(async (req: Request) => {
       .map((s: { content: string | null }) => s.content ?? "")
       .join("\n\n");
 
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
     const googleApiKey = Deno.env.get("GOOGLE_AI_API_KEY");
 
     let questions: unknown;
@@ -99,34 +98,7 @@ ${content.substring(0, 3000)}`,
       const questionsJson = textResponse.replace(/```json\n?|\n?```/g, "").trim();
       questions = JSON.parse(questionsJson);
     } else {
-      if (!lovableApiKey) {
-        throw new Error("Missing AI provider credentials");
-      }
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [{
-            role: "user",
-            content: `Generate ${questionCount} ${difficulty} multiple-choice questions from this content. Return ONLY valid JSON array with format: [{"question": "...", "options": ["A", "B", "C", "D"], "correctAnswer": "A"}]
-
-${content.substring(0, 3000)}`,
-          }],
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error?.message ?? "Lovable AI request failed");
-      }
-
-      const questionsJson = data.choices[0].message.content.replace(/```json\n?|\n?```/g, "").trim();
-      questions = JSON.parse(questionsJson);
+      throw new Error("Missing Google AI credentials");
     }
 
     const { data: quiz } = await supabase.from("quizzes").insert({

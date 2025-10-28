@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document describes the complete password management system implemented for the StudyAI application, including forgot password and change password features.
+This document describes the complete password management system implemented for the Nexon AI application, including forgot password and change password features.
 
 ## Features
 

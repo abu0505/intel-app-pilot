@@ -4,7 +4,7 @@ import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { Brain, Sparkles, Zap, Target, TrendingUp, BookOpen, MessageSquare, CheckCircle2, ArrowRight } from "lucide-react";
+import { Sparkles, Zap, Target, TrendingUp, BookOpen, MessageSquare, CheckCircle2, ArrowRight } from "lucide-react";
 
 const Index = () => {
   const navigate = useNavigate();
@@ -46,9 +46,13 @@ const Index = () => {
       <header className="fixed top-0 left-0 right-0 z-50 border-b bg-background/80 backdrop-blur-lg">
         <div className="container mx-auto flex h-16 items-center justify-between px-4">
           <div className="flex items-center gap-2">
-            <Brain className="h-8 w-8 text-primary" />
+            <img
+              src="/nexon-logo.svg"
+              alt="Nexon AI logo"
+              className="h-8 w-8"
+            />
             <span className="text-xl font-bold bg-gradient-to-r from-primary to-primary/60 bg-clip-text text-transparent">
-              StudyAI
+              Nexon AI
             </span>
           </div>
           <div className="flex items-center gap-4">
@@ -179,7 +183,7 @@ const Index = () => {
           <div className="grid md:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl md:text-4xl font-bold mb-6">
-                Why Students Love StudyAI
+                Why Learners Love Nexon AI
               </h2>
               <div className="space-y-4">
                 <BenefitItem text="Save hours of study time with AI-powered summaries" />
@@ -196,7 +200,7 @@ const Index = () => {
             <div className="rounded-2xl border bg-card p-8 shadow-xl">
               <div className="space-y-6">
                 <Testimonial
-                  quote="StudyAI helped me ace my finals. The AI-generated quizzes were spot-on!"
+                  quote="Nexon AI helped me ace my finals. The AI-generated quizzes were spot-on!"
                   author="Sarah M."
                   role="Medical Student"
                 />
@@ -223,7 +227,7 @@ const Index = () => {
             Ready to Transform Your Learning?
           </h2>
           <p className="text-lg text-muted-foreground mb-8">
-            Join thousands of students who are already learning smarter with StudyAI
+            Join thousands of students who are already learning smarter with Nexon AI
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Button size="lg" onClick={handleGetStarted} className="text-base px-8">
@@ -241,10 +245,14 @@ const Index = () => {
       <footer className="border-t bg-muted/30 py-12">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
           <div className="flex items-center justify-center gap-2 mb-4">
-            <Brain className="h-6 w-6 text-primary" />
-            <span className="font-semibold text-foreground">StudyAI</span>
+            <img
+              src="/nexon-logo.svg"
+              alt="Nexon AI logo"
+              className="h-6 w-6"
+            />
+            <span className="font-semibold text-foreground">Nexon AI</span>
           </div>
-          <p>&copy; 2025 StudyAI. All rights reserved. Built with ❤️ for students.</p>
+          <p>&copy; 2025 Nexon AI. All rights reserved. Built with ❤️ for students.</p>
         </div>
       </footer>
     </div>

@@ -116,10 +116,12 @@ const Auth = () => {
       {/* Left side - Hero Section */}
       <div className="hidden lg:flex lg:w-1/2 bg-gradient-to-br from-purple-600 via-purple-500 to-blue-500 p-12 flex-col justify-between">
         <div className="flex items-center gap-3">
-          <div className="bg-white/10 w-12 h-12 rounded-xl flex items-center justify-center backdrop-blur-sm">
-            <Brain className="w-7 h-7 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold text-white">StudyAI</h1>
+          <img
+            src="/nexon-logo.svg"
+            alt="Nexon AI logo"
+            className="w-12 h-12"
+          />
+          <h1 className="text-2xl font-bold text-white">Nexon AI</h1>
         </div>
         <div>
           <h2 className="text-5xl font-bold text-white mb-6">
@@ -144,7 +146,7 @@ const Auth = () => {
           </div>
         </div>
         <div className="text-sm text-white/60">
-          © 2025 StudyAI. All rights reserved.
+          © 2025 Nexon AI. All rights reserved.
         </div>
       </div>
 

@@ -92,7 +92,6 @@ Content:
 ${combinedContent.substring(0, 4000)}`;
 
     const googleApiKey = Deno.env.get("GOOGLE_AI_API_KEY");
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
 
     let aiResponseText: string;
 
@@ -143,37 +142,7 @@ ${combinedContent.substring(0, 4000)}`;
         .join("\n")
         .trim();
     } else {
-      if (!lovableApiKey) {
-        throw new Error("Missing AI provider credentials");
-      }
-
-      const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-        method: "POST",
-        headers: {
-          Authorization: `Bearer ${lovableApiKey}`,
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          model: "google/gemini-2.5-flash",
-          messages: [
-            {
-              role: "system",
-              content: instructions.join("\n\n"),
-            },
-            {
-              role: "user",
-              content: combinedContent.substring(0, 4000),
-            },
-          ],
-        }),
-      });
-
-      const data = await response.json();
-      if (!response.ok) {
-        throw new Error(data.error?.message ?? "Lovable AI request failed");
-      }
-
-      aiResponseText = data.choices?.[0]?.message?.content ?? "";
+      throw new Error("Missing Google AI credentials");
     }
 
     const jsonMatch = aiResponseText.match(/\{[\s\S]*\}/);

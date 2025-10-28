@@ -5,12 +5,12 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Bot, User, Sparkles, MessageSquare, Trash2, Plus, Copy, RotateCcw, Share2, Check } from "lucide-react";
+import { Send, Bot, User, Sparkles, Copy, RotateCcw, Share2, Check } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { Separator } from "@/components/ui/separator";
 import MarkdownMessage from "@/components/dashboard/MarkdownMessage";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 interface Message {
   id: string;
@@ -29,47 +29,11 @@ interface ChatSession {
 const ChatTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { sessionId } = useDashboard();
   const [message, setMessage] = useState("");
-  const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
   const messagesEndRef = useRef<HTMLDivElement>(null);
-  const [sidebarOpen, setSidebarOpen] = useState(true);
   const [copiedMessageId, setCopiedMessageId] = useState<string | null>(null);
 
-  // Fetch chat sessions
-  const { data: chatSessions } = useQuery({
-    queryKey: ["chat-sessions"],
-    queryFn: async () => {
-      const { data: userData } = await supabase.auth.getUser();
-      if (!userData.user) throw new Error("User not authenticated");
-
-      const oneWeekAgo = new Date();
-      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
-
-      const { data, error } = await supabase
-        .from("chat_histories")
-        .select("session_id, created_at, content")
-        .eq("user_id", userData.user.id)
-        .eq("message_type", "user")
-        .gte("created_at", oneWeekAgo.toISOString())
-        .order("created_at", { ascending: false });
-
-      if (error) throw error;
-
-      // Group by session and get first message
-      const sessionMap = new Map<string, ChatSession>();
-      data.forEach((msg) => {
-        if (!sessionMap.has(msg.session_id)) {
-          sessionMap.set(msg.session_id, {
-            session_id: msg.session_id,
-            created_at: msg.created_at,
-            first_message: msg.content.substring(0, 50) + (msg.content.length > 50 ? "..." : ""),
-          });
-        }
-      });
-
-      return Array.from(sessionMap.values());
-    },
-  });
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ["chat-messages", sessionId],
@@ -140,44 +104,11 @@ const ChatTab = () => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
 
-  const deleteChatMutation = useMutation({
-    mutationFn: async (session_id: string) => {
-      const { error } = await supabase
-        .from("chat_histories")
-        .delete()
-        .eq("session_id", session_id);
-
-      if (error) throw error;
-    },
-    onSuccess: (_, deletedSessionId) => {
-      queryClient.invalidateQueries({ queryKey: ["chat-sessions"] });
-      if (sessionId === deletedSessionId) {
-        setSessionId(crypto.randomUUID());
-      }
-      toast({ title: "Chat deleted successfully" });
-    },
-    onError: (error: Error) => {
-      toast({
-        variant: "destructive",
-        title: "Failed to delete chat",
-        description: error.message,
-      });
-    },
-  });
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!message.trim()) return;
     sendMessageMutation.mutate(message);
-  };
-
-  const createNewChat = () => {
-    setSessionId(crypto.randomUUID());
-    setMessage("");
-  };
-
-  const switchToSession = (session_id: string) => {
-    setSessionId(session_id);
   };
 
   const copyMessage = (content: string, messageId: string) => {
@@ -196,7 +127,7 @@ const ChatTab = () => {
 
   const shareMessage = (content: string) => {
     const shareData = {
-      title: "StudyAI Chat",
+      title: "Nexon AI Chat",
       text: content,
     };
     if (navigator.share) {
@@ -207,79 +138,8 @@ const ChatTab = () => {
   };
 
   return (
-    <div className="flex h-[calc(100vh-12rem)] gap-4">
-      {/* Sidebar */}
-      {sidebarOpen && (
-        <Card className="w-72 flex-shrink-0">
-          <CardContent className="p-4 h-full flex flex-col">
-            <div className="flex items-center justify-between mb-4">
-              <h3 className="font-semibold flex items-center gap-2">
-                <MessageSquare className="w-4 h-4" />
-                Recent Chats
-              </h3>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={createNewChat}
-                className="h-8 w-8 p-0"
-              >
-                <Plus className="w-4 h-4" />
-              </Button>
-            </div>
-            <Separator className="mb-4" />
-            <ScrollArea className="flex-1">
-              <div className="space-y-2">
-                {chatSessions?.map((session) => (
-                  <div
-                    key={session.session_id}
-                    className={`group relative p-3 rounded-lg border cursor-pointer transition-all hover:shadow-md ${
-                      session.session_id === sessionId
-                        ? "bg-primary/10 border-primary"
-                        : "hover:bg-muted"
-                    }`}
-                    onClick={() => switchToSession(session.session_id)}
-                  >
-                    <p className="text-sm font-medium line-clamp-2 pr-6">
-                      {session.first_message}
-                    </p>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      {new Date(session.created_at).toLocaleDateString()}
-                    </p>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      className="absolute top-2 right-2 h-6 w-6 p-0 opacity-0 group-hover:opacity-100 transition-opacity"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        deleteChatMutation.mutate(session.session_id);
-                      }}
-                    >
-                      <Trash2 className="w-3 h-3" />
-                    </Button>
-                  </div>
-                ))}
-                {(!chatSessions || chatSessions.length === 0) && (
-                  <div className="text-center py-8 text-sm text-muted-foreground">
-                    No recent chats
-                  </div>
-                )}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
-      )}
-
-      {/* Main Chat Area */}
-      <div className="flex-1 flex flex-col">
-        <div className="mb-4">
-          <h2 className="text-3xl font-bold flex items-center gap-2">
-            AI Study Assistant
-            <Sparkles className="w-6 h-6 text-primary" />
-          </h2>
-          <p className="text-muted-foreground mt-1">Ask questions about your uploaded sources</p>
-        </div>
-
-        <Card className="flex-1 flex flex-col">
+    <div className="flex flex-col h-full max-w-5xl mx-auto w-full">
+        <Card className="flex-1 flex flex-col shadow-lg">
           <CardContent className="p-0 flex-1 flex flex-col">
             <ScrollArea className="flex-1 p-6">
               <div className="space-y-4">
@@ -439,7 +299,6 @@ const ChatTab = () => {
             </div>
           </CardContent>
         </Card>
-      </div>
     </div>
   );
 };

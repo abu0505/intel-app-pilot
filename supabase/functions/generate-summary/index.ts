@@ -41,39 +41,59 @@ serve(async (req: Request) => {
 
     if (!source) throw new Error("Source not found");
 
-    const lovableApiKey = Deno.env.get("LOVABLE_API_KEY");
-    if (!lovableApiKey) {
-      throw new Error("Missing AI provider credentials");
+    const googleApiKey = Deno.env.get("GOOGLE_AI_API_KEY");
+    if (!googleApiKey) {
+      throw new Error("Missing Google AI credentials");
     }
 
-    // Generate summary using AI
-    const response = await fetch("https://ai.gateway.lovable.dev/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${lovableApiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "google/gemini-2.5-flash",
-        messages: [
-          { 
-            role: "system", 
-            content: "You are a helpful study assistant. Generate a concise, well-structured summary of the provided content in 2-3 paragraphs. Focus on key concepts and main ideas." 
-          },
-          { 
-            role: "user", 
-            content: `Please summarize this content:\n\nTitle: ${source.source_name}\nType: ${source.source_type}\n\nContent:\n${source.content.slice(0, 8000)}` 
-          },
-        ],
-      }),
-    });
+    const geminiModels = [
+      "gemini-2.0-flash",
+      "gemini-2.0-flash-lite",
+      "gemini-1.5-flash",
+    ];
 
-    const data = await response.json();
-    if (!response.ok) {
-      throw new Error(data.error?.message ?? "AI request failed");
+    let googleResponse: Response | null = null;
+    let googleData: any = null;
+    let successful = false;
+    let lastError: string | undefined;
+
+    const prompt = `You are a helpful study assistant. Generate a concise, well-structured summary in 2-3 paragraphs highlighting key concepts and main ideas.\n\nTitle: ${source.source_name}\nType: ${source.source_type}\n\nContent:\n${(source.content ?? "").slice(0, 8000)}`;
+
+    for (const model of geminiModels) {
+      googleResponse = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/${model}:generateContent?key=${googleApiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          contents: [
+            {
+              role: "user",
+              parts: [{ text: prompt }],
+            },
+          ],
+        }),
+      });
+
+      googleData = await googleResponse.json();
+      if (googleResponse.ok) {
+        successful = true;
+        break;
+      }
+
+      lastError = googleData.error?.message ?? `Gemini request failed for model ${model}`;
     }
 
-    const summary = data.choices?.[0]?.message?.content ?? "";
+    if (!successful || !googleData) {
+      throw new Error(lastError ?? "Gemini API request failed");
+    }
+
+    const summary = (googleData.candidates?.[0]?.content?.parts ?? [])
+      .map((part: { text?: string }) => part.text ?? "")
+      .join("\n")
+      .trim();
+
+    if (!summary) {
+      throw new Error("Failed to generate summary");
+    }
 
     // Update source with summary
     await supabase

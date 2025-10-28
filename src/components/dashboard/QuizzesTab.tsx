@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Brain, Trophy, ChevronRight, Sparkles, Layers, History, Target, Share2 } from "lucide-react";
+import { Plus, Brain, Trophy, ChevronRight, Sparkles, Layers, History, Target } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useQuizzes } from "@/hooks/use-quizzes";
@@ -78,23 +78,6 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
       setAnswers({});
     },
   });
-
-  const handleShareQuiz = async (quizId: string) => {
-    const shareUrl = `${window.location.origin}/dashboard?quiz=${quizId}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link copied!",
-        description: "Share this link to let others take your quiz.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Failed to copy link",
-        description: "Please try again.",
-      });
-    }
-  };
 
   const handleGenerateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -335,22 +318,9 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
                         <CardDescription className="text-sm">AI generated quiz</CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShareQuiz(quiz.id);
-                        }}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                      <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-                        {quiz.difficulty_level}
-                      </Badge>
-                    </div>
+                    <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                      {quiz.difficulty_level}
+                    </Badge>
                   </div>
                   <p className="text-xs text-muted-foreground">Created {new Date(quiz.created_at).toLocaleDateString()}</p>
                 </CardHeader>

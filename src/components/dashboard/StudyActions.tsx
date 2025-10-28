@@ -8,7 +8,7 @@ import { QuizCustomizationDialog } from "@/components/dashboard/QuizCustomizatio
 import { FlashcardCustomizationDialog } from "@/components/dashboard/FlashcardCustomizationDialog";
 import { useQuizzes } from "@/hooks/use-quizzes";
 import { useFlashcards } from "@/hooks/use-flashcards";
-import { Loader2, Pencil, Sparkles, Layers, BookOpen, Brain, MoreHorizontal, Trash2, Edit3 } from "lucide-react";
+import { Loader2, Pencil, Sparkles, Layers, BookOpen, Brain, MoreHorizontal, Trash2, Edit3, Share2 } from "lucide-react";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -119,6 +119,40 @@ export function StudyActions({
         toast({ title: "Unable to delete", description: error.message, variant: "destructive" });
       },
     });
+  };
+
+  const handleShareFlashcard = async (id: string) => {
+    const shareUrl = `${window.location.origin}/dashboard?flashcard=${id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share this link to let others study your flashcards.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy link",
+        description: "Please try again.",
+      });
+    }
+  };
+
+  const handleShareQuiz = async (id: string) => {
+    const shareUrl = `${window.location.origin}/dashboard?quiz=${id}`;
+    try {
+      await navigator.clipboard.writeText(shareUrl);
+      toast({
+        title: "Link copied!",
+        description: "Share this link to let others take your quiz.",
+      });
+    } catch (error) {
+      toast({
+        variant: "destructive",
+        title: "Failed to copy link",
+        description: "Please try again.",
+      });
+    }
   };
 
   const defaultSourceIds = sources?.map((source: any) => source.id) ?? [];
@@ -241,14 +275,6 @@ export function StudyActions({
       </div>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Flashcard Sets</h3>
-          {onOpenFlashcards && (flashcards?.length ?? 0) > 0 && (
-            <Button variant="link" className="px-0" onClick={() => onOpenFlashcards()}>
-              View all
-            </Button>
-          )}
-        </div>
         {isFlashcardsLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
             {Array.from({ length: 2 }).map((_, index) => (
@@ -315,6 +341,16 @@ export function StudyActions({
                         <DropdownMenuItem
                           onClick={(event) => {
                             event.stopPropagation();
+                            handleShareFlashcard(flashcard.id);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
                             handleDeleteFlashcard(flashcard.id);
                           }}
                           className="flex items-center gap-2 text-destructive focus:text-destructive"
@@ -341,14 +377,6 @@ export function StudyActions({
       </section>
 
       <section className="space-y-4">
-        <div className="flex items-center justify-between">
-          <h3 className="text-lg font-semibold">Quizzes</h3>
-          {onOpenQuiz && (quizzes?.length ?? 0) > 0 && (
-            <Button variant="link" className="px-0" onClick={() => onOpenQuiz()}>
-              View all
-            </Button>
-          )}
-        </div>
         {isQuizzesLoading ? (
           <div className="grid gap-4 md:grid-cols-2">
             {Array.from({ length: 2 }).map((_, index) => (
@@ -416,6 +444,16 @@ export function StudyActions({
                         >
                           <Edit3 className="h-4 w-4" />
                           Rename
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(event) => {
+                            event.stopPropagation();
+                            handleShareQuiz(quiz.id);
+                          }}
+                          className="flex items-center gap-2"
+                        >
+                          <Share2 className="h-4 w-4" />
+                          Share
                         </DropdownMenuItem>
                         <DropdownMenuItem
                           onClick={(event) => {

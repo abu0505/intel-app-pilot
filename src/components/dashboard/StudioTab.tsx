@@ -594,7 +594,7 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
       </TooltipProvider>
 
       {/* Studio Content */}
-      <div>
+      <div className="space-y-2 rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl">
         <StudyActions
           onOpenFlashcards={(flashcardId) => {
             setSelectedFlashcardId(flashcardId);

@@ -13,10 +13,10 @@ import {
   RotateCcw,
   Trash2,
   Sparkles,
+  BookOpen,
   Layers,
   History,
   Target,
-  Share2,
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
@@ -65,23 +65,6 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
     if (currentCardIndex > 0) {
       setCurrentCardIndex(currentCardIndex - 1);
       setIsFlipped(false);
-    }
-  };
-
-  const handleShareFlashcard = async (flashcardId: string) => {
-    const shareUrl = `${window.location.origin}/dashboard?flashcard=${flashcardId}`;
-    try {
-      await navigator.clipboard.writeText(shareUrl);
-      toast({
-        title: "Link copied!",
-        description: "Share this link to let others study your flashcards.",
-      });
-    } catch (error) {
-      toast({
-        variant: "destructive",
-        title: "Failed to copy link",
-        description: "Please try again.",
-      });
     }
   };
 
@@ -300,30 +283,17 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
                 <CardHeader className="relative z-10 space-y-4 pb-6">
                   <div className="flex items-start justify-between gap-3">
                     <div className="flex items-center gap-3 flex-1 cursor-pointer" onClick={() => setSelectedFlashcard(flashcard)}>
-                      <div className="rounded-full bg-primary/15 p-2 text-primary">
-                        <Sparkles className="h-4 w-4" />
+                      <div className="rounded-lg bg-primary/15 p-2.5 text-primary">
+                        <BookOpen className="h-4 w-4" />
                       </div>
-                      <div className="space-y-1">
-                        <CardTitle className="text-lg font-semibold leading-tight">{flashcard.title}</CardTitle>
+                      <div className="flex-1 space-y-1">
+                        <CardTitle className="line-clamp-2 text-base font-semibold leading-tight">{flashcard.title}</CardTitle>
                         <CardDescription className="text-sm">AI generated flashcards</CardDescription>
                       </div>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="hover:text-primary"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleShareFlashcard(flashcard.id);
-                        }}
-                      >
-                        <Share2 className="h-4 w-4" />
-                      </Button>
-                      <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
-                        {flashcard.card_count} cards
-                      </Badge>
-                    </div>
+                    <Badge variant="outline" className="rounded-full border-border/40 bg-background/80 px-3 py-1 text-xs font-medium uppercase tracking-wide">
+                      {flashcard.card_count} cards
+                    </Badge>
                   </div>
                 </CardHeader>
 
