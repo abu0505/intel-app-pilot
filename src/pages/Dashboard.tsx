@@ -3,7 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
-import { Brain, Sparkles, Menu } from "lucide-react";
+import { Brain, Menu } from "lucide-react";
 import ChatTab from "@/components/dashboard/ChatTab";
 import StudioTab from "@/components/dashboard/StudioTab";
 import { CollapsibleSidebar } from "@/components/dashboard/CollapsibleSidebar";
@@ -72,42 +72,19 @@ function DashboardContent() {
         onMobileClose={closeMobileSidebar}
       />
 
+      {/* Mobile hamburger button - absolute positioning */}
+      <Button
+        variant="ghost"
+        size="icon"
+        className="md:hidden fixed top-4 left-4 z-40"
+        onClick={toggleMobileSidebar}
+        aria-label="Toggle menu"
+      >
+        <Menu className="w-5 h-5" />
+      </Button>
+
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col min-w-0">
-        {/* Minimal Header */}
-        <header className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60 sticky top-0 z-30">
-          <div className="container mx-auto px-4 py-3 flex items-center justify-between">
-            {/* Mobile hamburger */}
-            <Button
-              variant="ghost"
-              size="icon"
-              className="md:hidden"
-              onClick={toggleMobileSidebar}
-              aria-label="Toggle menu"
-            >
-              <Menu className="w-5 h-5" />
-            </Button>
-
-            {/* Logo/Brand */}
-            <div className="flex items-center gap-3">
-              <img
-                src="/nexon-logo.svg"
-                alt="Nexon AI logo"
-                className="w-9 h-9"
-              />
-              <div>
-                <h1 className="text-xl font-bold flex items-center gap-2">
-                  Nexon AI
-                  <Sparkles className="w-4 h-4 text-accent" />
-                </h1>
-              </div>
-            </div>
-
-            {/* Spacer for mobile to center logo */}
-            <div className="w-10 md:hidden" />
-          </div>
-        </header>
-
         {/* Main Content */}
         <main className="flex-1 container mx-auto px-4 py-6 overflow-auto">
           {currentView === "chat" ? <ChatTab /> : <StudioTab />}

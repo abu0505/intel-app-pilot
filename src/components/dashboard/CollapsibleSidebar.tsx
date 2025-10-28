@@ -115,7 +115,6 @@ export function CollapsibleSidebar({
   };
 
   const sidebarWidth = isExpanded ? "280px" : "64px";
-  const showLabels = isExpanded;
 
   return (
     <>
@@ -132,18 +131,16 @@ export function CollapsibleSidebar({
       <aside
         className={cn(
           "fixed left-0 top-0 h-screen bg-sidebar border-r border-border z-50",
-          "flex flex-col transition-all duration-300 ease-in-out",
+          "flex flex-col transition-all duration-300 ease-in-out overflow-hidden",
           "md:relative md:translate-x-0",
           isMobileOpen ? "translate-x-0" : "-translate-x-full md:translate-x-0"
         )}
         style={{ width: sidebarWidth }}
-        onMouseEnter={handleMouseEnter}
-        onMouseLeave={handleMouseLeave}
         aria-label="Main navigation sidebar"
         aria-expanded={isExpanded}
       >
-        {/* Top Section - Action buttons */}
-        <div className="flex-1 flex flex-col py-4 px-2 space-y-2">
+        {/* Top Section - Logo and New Chat (NO HOVER EXPANSION) */}
+        <div className="flex flex-col items-center py-4 space-y-4">
           {/* Mobile menu close button */}
           <Button
             variant="ghost"
@@ -155,146 +152,152 @@ export function CollapsibleSidebar({
             <Menu className="w-5 h-5" />
           </Button>
 
-          {/* Pin button - only visible when expanded and on desktop */}
-          {isExpanded && (
-            <div className="hidden md:flex justify-end px-2 mb-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={togglePin}
-                className="h-8 w-8"
-                aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
-              >
-                {isPinned ? (
-                  <PinOff className="w-4 h-4" />
-                ) : (
-                  <Pin className="w-4 h-4" />
-                )}
-              </Button>
-            </div>
-          )}
+          {/* Logo */}
+          <div className="flex flex-col items-center justify-center">
+            <img
+              src="/nexon-logo.svg"
+              alt="StudyAI"
+              className="w-9 h-9"
+            />
+            {isExpanded && (
+              <p className="text-sm font-semibold mt-2">StudyAI</p>
+            )}
+          </div>
 
           {/* New Chat button */}
-          <Button
-            variant="ghost"
-            size={showLabels ? "default" : "icon"}
-            className={cn(
-              showLabels ? "justify-start" : "justify-center",
-              !showLabels && "w-12 h-12"
-            )}
+          <button
             onClick={handleNewChat}
+            className="flex flex-col items-center justify-center w-12 h-12 rounded-lg hover:bg-accent transition-colors"
             aria-label="Create new chat"
           >
             <Plus className="w-5 h-5" />
-            {showLabels && <span className="ml-2">New Chat</span>}
-          </Button>
+            <span className="text-[10px] text-muted-foreground mt-0.5">New</span>
+          </button>
+        </div>
 
-          {/* AI Chat button with hover expansion */}
-          <div className="relative">
-            <Button
-              variant={currentView === "chat" ? "secondary" : "ghost"}
-              size={showLabels ? "default" : "icon"}
-              className={cn(
-                "w-full",
-                showLabels ? "justify-start" : "justify-center",
-                !showLabels && "w-12 h-12"
-              )}
+        {/* Middle Section - HOVERABLE ZONE - Icons + Chat History (Grid Layout) */}
+        <div
+          className="flex-1 flex overflow-hidden"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          {/* Left Column - Fixed Icons (always visible, 64px) */}
+          <div className="flex flex-col items-center space-y-2 py-2 w-16 flex-shrink-0">
+            {/* AI Chat Icon */}
+            <button
               onClick={handleChatClick}
+              className={cn(
+                "flex flex-col items-center justify-center w-12 h-12 rounded-lg transition-colors",
+                currentView === "chat"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "hover:bg-accent"
+              )}
               aria-label="AI Chat"
               aria-current={currentView === "chat" ? "page" : undefined}
             >
               <MessageSquare className="w-5 h-5" />
-              {showLabels && <span className="ml-2">AI Chat</span>}
-            </Button>
+              <span className="text-[10px] text-muted-foreground mt-0.5">Chat</span>
+            </button>
 
-            {/* Chat history dropdown - shown when expanded */}
-            {isExpanded && currentView === "chat" && (
-              <div className="mt-2 px-2">
-                <ScrollArea className="h-[300px]">
-                  <div className="space-y-1">
-                    <p className="text-xs text-muted-foreground px-2 mb-2">
-                      Recent Chats
-                    </p>
-                    {chatSessions?.map((session) => (
-                      <button
-                        key={session.session_id}
-                        onClick={() => handleSessionClick(session.session_id)}
-                        className={cn(
-                          "w-full text-left p-2 rounded-md text-sm transition-colors",
-                          "hover:bg-accent",
-                          session.session_id === sessionId
-                            ? "bg-accent text-accent-foreground"
-                            : "text-muted-foreground"
-                        )}
-                        aria-current={
-                          session.session_id === sessionId ? "true" : undefined
-                        }
-                      >
-                        <p className="line-clamp-2 text-xs">
-                          {session.first_message}
-                        </p>
-                        <p className="text-[10px] text-muted-foreground mt-1">
-                          {new Date(session.created_at).toLocaleDateString()}
-                        </p>
-                      </button>
-                    ))}
-                    {(!chatSessions || chatSessions.length === 0) && (
-                      <p className="text-xs text-muted-foreground px-2 py-4 text-center">
-                        No recent chats
-                      </p>
-                    )}
-                  </div>
-                </ScrollArea>
-              </div>
-            )}
+            {/* Studio Icon */}
+            <button
+              onClick={handleStudioClick}
+              className={cn(
+                "flex flex-col items-center justify-center w-12 h-12 rounded-lg transition-colors",
+                currentView === "studio"
+                  ? "bg-secondary text-secondary-foreground"
+                  : "hover:bg-accent"
+              )}
+              aria-label="Studio"
+              aria-current={currentView === "studio" ? "page" : undefined}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span className="text-[10px] text-muted-foreground mt-0.5">Studio</span>
+            </button>
           </div>
 
-          {/* Studio button */}
-          <Button
-            variant={currentView === "studio" ? "secondary" : "ghost"}
-            size={showLabels ? "default" : "icon"}
-            className={cn(
-              showLabels ? "justify-start" : "justify-center",
-              !showLabels && "w-12 h-12"
-            )}
-            onClick={handleStudioClick}
-            aria-label="Studio - Upload sources"
-            aria-current={currentView === "studio" ? "page" : undefined}
-          >
-            <Sparkles className="w-5 h-5" />
-            {showLabels && <span className="ml-2">Studio</span>}
-          </Button>
+          {/* Right Panel - Chat History (appears when expanded) */}
+          {isExpanded && (
+            <div className="flex-1 flex flex-col border-l border-border/50 overflow-hidden">
+              {/* Pin button */}
+              <div className="hidden md:flex justify-end px-2 py-2">
+                <Button
+                  variant="ghost"
+                  size="icon"
+                  onClick={togglePin}
+                  className="h-7 w-7"
+                  aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
+                >
+                  {isPinned ? (
+                    <PinOff className="w-3.5 h-3.5" />
+                  ) : (
+                    <Pin className="w-3.5 h-3.5" />
+                  )}
+                </Button>
+              </div>
+
+              {/* Chat History List */}
+              {currentView === "chat" && (
+                <div className="flex-1 px-2 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <div className="space-y-1 py-2">
+                      <p className="text-xs text-muted-foreground px-2 mb-2">
+                        Recent Chats
+                      </p>
+                      {chatSessions?.map((session) => (
+                        <button
+                          key={session.session_id}
+                          onClick={() => handleSessionClick(session.session_id)}
+                          className={cn(
+                            "w-full text-left p-2 rounded-md text-sm transition-colors",
+                            "hover:bg-accent",
+                            session.session_id === sessionId
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted-foreground"
+                          )}
+                          aria-current={
+                            session.session_id === sessionId ? "true" : undefined
+                          }
+                        >
+                          <p className="line-clamp-2 text-xs">
+                            {session.first_message}
+                          </p>
+                          <p className="text-[10px] text-muted-foreground mt-1">
+                            {new Date(session.created_at).toLocaleDateString()}
+                          </p>
+                        </button>
+                      ))}
+                      {(!chatSessions || chatSessions.length === 0) && (
+                        <p className="text-xs text-muted-foreground px-2 py-4 text-center">
+                          No recent chats
+                        </p>
+                      )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+            </div>
+          )}
         </div>
 
-        {/* Bottom Section - Theme & Account */}
-        <div className="border-t border-border py-4 px-2 space-y-2">
+        {/* Bottom Section - Theme & Account (NO HOVER) */}
+        <div className="border-t border-border py-4 flex flex-col items-center space-y-2">
           {/* Theme Toggle */}
-          <div
-            className={cn(
-              "flex items-center",
-              showLabels ? "justify-start px-2" : "justify-center"
-            )}
-          >
+          <div className="flex flex-col items-center justify-center">
             <ThemeToggle />
-            {showLabels && <span className="ml-2 text-sm">Theme</span>}
+            <span className="text-[10px] text-muted-foreground mt-0.5">Theme</span>
           </div>
 
           {/* Account Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
-              <Button
-                variant="ghost"
-                size={showLabels ? "default" : "icon"}
-                className={cn(
-                  "w-full",
-                  showLabels ? "justify-start" : "justify-center",
-                  !showLabels && "w-12 h-12"
-                )}
+              <button
+                className="flex flex-col items-center justify-center w-12 h-12 rounded-lg hover:bg-accent transition-colors"
                 aria-label="Account settings"
               >
                 <User className="w-5 h-5" />
-                {showLabels && <span className="ml-2">Account</span>}
-              </Button>
+                <span className="text-[10px] text-muted-foreground mt-0.5">Account</span>
+              </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
               <DropdownMenuLabel>My Account</DropdownMenuLabel>
