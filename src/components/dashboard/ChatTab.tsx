@@ -5,11 +5,7 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Bot, User, Sparkles, Copy, RotateCcw, Share2, Check } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Skeleton } from "@/components/ui/skeleton";
-import { ScrollArea } from "@/components/ui/scroll-area";
-import MarkdownMessage from "@/components/dashboard/MarkdownMessage";
+import { Send, Mic, Folder, Grid3x3 } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 
 interface Message {
@@ -138,167 +134,61 @@ const ChatTab = () => {
   };
 
   return (
-    <div className="flex flex-col h-full max-w-5xl mx-auto w-full">
-        <Card className="flex-1 flex flex-col shadow-lg">
-          <CardContent className="p-0 flex-1 flex flex-col">
-            <ScrollArea className="flex-1 p-6">
-              <div className="space-y-4">
-                {isLoading ? (
-                  <div className="flex items-center justify-center py-12">
-                    <div className="flex flex-col items-center gap-3">
-                      <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                      <p className="text-sm text-muted-foreground">Loading chat...</p>
-                    </div>
-                  </div>
-                ) : messages?.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center py-12 text-center">
-                    <div className="rounded-full bg-gradient-to-br from-primary/20 to-accent/20 p-6 mb-4">
-                      <Bot className="w-12 h-12 text-primary" />
-                    </div>
-                    <h3 className="text-xl font-semibold mb-2">Start a conversation</h3>
-                    <p className="text-muted-foreground max-w-md mb-4">
-                      I have access to all your uploaded sources. Ask me anything about your learning materials!
-                    </p>
-                    <div className="flex flex-wrap gap-2 justify-center max-w-2xl mx-auto">
-                      <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setMessage("Summarize my recent notes")}>
-                        📝 Summarize my notes
-                      </Badge>
-                      <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setMessage("Create a study plan for this week")}>
-                        📅 Create study plan
-                      </Badge>
-                      <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setMessage("Explain the key concepts from my sources")}>
-                        💡 Explain concepts
-                      </Badge>
-                      <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setMessage("Generate practice questions")}>
-                        ❓ Practice questions
-                      </Badge>
-                      <Badge variant="outline" className="cursor-pointer hover:bg-primary/10 hover:border-primary transition-all" onClick={() => setMessage("Compare different topics from my sources")}>
-                        🔄 Compare topics
-                      </Badge>
-                    </div>
-                  </div>
-                ) : (
-                  messages?.map((msg) => (
-                    <div
-                      key={msg.id}
-                      className={`group flex gap-3 animate-in fade-in slide-in-from-bottom-2 ${
-                        msg.message_type === "user" ? "justify-end" : ""
-                      }`}
-                    >
-                      {msg.message_type === "assistant" && (
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-primary to-primary/70 flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <Bot className="w-5 h-5 text-primary-foreground" />
-                        </div>
-                      )}
-                      <div className="flex flex-col gap-2 max-w-[90%]">
-                        {/* Context Pills - Show before AI message */}
-                        {msg.message_type === "assistant" && msg.sources_referenced && msg.sources_referenced.length > 0 && (
-                          <div className="flex flex-wrap gap-1.5 px-2">
-                            <span className="text-xs text-muted-foreground">Using sources:</span>
-                            {msg.sources_referenced.map((sourceId, idx) => (
-                              <Badge key={idx} variant="outline" className="text-xs border-primary/50 bg-primary/5">
-                                📚 Source {idx + 1}
-                              </Badge>
-                            ))}
-                          </div>
-                        )}
-                        <div
-                          className={`rounded-2xl p-4 shadow-sm ${
-                            msg.message_type === "user"
-                              ? "bg-gradient-to-br from-primary to-primary/90 text-primary-foreground"
-                              : "bg-muted/50 backdrop-blur"
-                          }`}
-                        >
-                          {msg.content === "..." ? (
-                            <div className="space-y-2">
-                              <Skeleton className="h-4 w-full" />
-                              <Skeleton className="h-4 w-3/4" />
-                              <Skeleton className="h-4 w-5/6" />
-                            </div>
-                          ) : (
-                            <MarkdownMessage content={msg.content} />
-                          )}
-                        </div>
-                        {/* Message Actions */}
-                        {msg.content !== "..." && (
-                          <div className="flex gap-1 px-2 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => copyMessage(msg.content, msg.id)}
-                            >
-                              {copiedMessageId === msg.id ? (
-                                <Check className="w-3 h-3 mr-1" />
-                              ) : (
-                                <Copy className="w-3 h-3 mr-1" />
-                              )}
-                              Copy
-                            </Button>
-                            {msg.message_type === "assistant" && (
-                              <Button
-                                variant="ghost"
-                                size="sm"
-                                className="h-7 px-2 text-xs"
-                                onClick={regenerateMessage}
-                              >
-                                <RotateCcw className="w-3 h-3 mr-1" />
-                                Regenerate
-                              </Button>
-                            )}
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              className="h-7 px-2 text-xs"
-                              onClick={() => shareMessage(msg.content)}
-                            >
-                              <Share2 className="w-3 h-3 mr-1" />
-                              Share
-                            </Button>
-                          </div>
-                        )}
-                      </div>
-                      {msg.message_type === "user" && (
-                        <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-accent to-accent/70 flex items-center justify-center flex-shrink-0 shadow-sm">
-                          <User className="w-5 h-5 text-white" />
-                        </div>
-                      )}
-                    </div>
-                  ))
-                )}
-                <div ref={messagesEndRef} />
-              </div>
-            </ScrollArea>
+    <div className="flex flex-col items-center justify-center h-full w-full px-4">
+      {/* Centered Branding */}
+      <div className="flex flex-col items-center mb-12">
+        <div className="flex items-center gap-3 mb-8">
+          <img
+            src="/nexon-logo.svg"
+            alt="Nexora AI"
+            className="w-12 h-12"
+          />
+          <h1 className="text-4xl font-semibold text-foreground">Nexora AI</h1>
+        </div>
 
-            <div className="border-t bg-background p-4">
-              <form onSubmit={handleSubmit} className="flex gap-3">
-                <Textarea
-                  value={message}
-                  onChange={(e) => setMessage(e.target.value)}
-                  placeholder="Ask a question about your sources..."
-                  className="min-h-[64px] resize-none rounded-xl border-2 focus-visible:ring-1"
-                  onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey) {
-                      e.preventDefault();
-                      handleSubmit(e);
-                    }
-                  }}
-                />
-                <Button
-                  type="submit"
-                  size="icon"
-                  className="h-[64px] w-[64px] rounded-xl shadow-lg"
-                  disabled={!message.trim() || sendMessageMutation.isPending}
-                >
-                  <Send className="w-5 h-5" />
-                </Button>
-              </form>
-              <p className="text-xs text-muted-foreground mt-2 text-center">
-                Press Enter to send, Shift+Enter for new line
-              </p>
+        {/* Main Card */}
+        <Card className="w-full max-w-2xl bg-card/50 backdrop-blur border-border/50 shadow-lg">
+          <CardContent className="p-8">
+            <p className="text-muted-foreground text-center mb-6 leading-relaxed">
+              I have access to all your uploaded sources. Ask me anything about your learning materials...
+            </p>
+            
+            {/* Action Buttons */}
+            <div className="flex items-center justify-end gap-2">
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+              >
+                <Mic className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+              >
+                <Folder className="w-5 h-5" />
+              </Button>
+              <Button
+                variant="ghost"
+                size="icon"
+                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+              >
+                <Grid3x3 className="w-5 h-5" />
+              </Button>
+              <Button
+                size="icon"
+                className="h-10 w-10 rounded-lg bg-primary hover:bg-primary/90"
+                onClick={() => {
+                  // Handle send action
+                }}
+              >
+                <Send className="w-5 h-5" />
+              </Button>
             </div>
           </CardContent>
         </Card>
+      </div>
     </div>
   );
 };

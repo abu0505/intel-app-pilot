@@ -151,7 +151,7 @@ export function CollapsibleSidebar({
         </Button>
 
         {/* Top Section - Logo */}
-        <div className="flex flex-col items-center pt-6 pb-4 w-[74px] self-start">
+        <div className="flex flex-col items-center pt-6 pb-8 w-[74px] self-start">
           <div className="flex items-center justify-center">
             <img
               src="/nexon-logo.svg"
@@ -162,7 +162,7 @@ export function CollapsibleSidebar({
         </div>
 
         {/* New Chat button */}
-        <div className="flex flex-col items-center justify-center py-4 w-[74px] self-start">
+        <div className="flex flex-col items-center justify-center pb-8 w-[74px] self-start">
           <button
             onClick={handleNewChat}
             className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
@@ -280,7 +280,7 @@ export function CollapsibleSidebar({
         </div>
 
         {/* Bottom Section - Theme & Account */}
-        <div className="py-4 flex flex-col items-center space-y-2 w-[74px] self-start border-t border-border/50">
+        <div className="py-4 flex flex-col items-center space-y-2 w-[74px] self-start">
           {/* Theme Toggle */}
           <div className="flex flex-col items-center justify-center">
             <ThemeToggle />
