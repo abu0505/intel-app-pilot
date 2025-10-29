@@ -139,63 +139,62 @@ export function CollapsibleSidebar({
         aria-label="Main navigation sidebar"
         aria-expanded={isExpanded}
       >
-        {/* Top Section - Logo and New Chat (NO HOVER EXPANSION) */}
-        <div className="flex flex-col items-center pb-4 space-y-5 w-[74px] self-start">
-          {/* Mobile menu close button */}
-          <Button
-            variant="ghost"
-            size="icon"
-            className="md:hidden mb-2"
-            onClick={onMobileClose}
-            aria-label="Close menu"
-          >
-            <Menu className="w-5 h-5" />
-          </Button>
+        {/* Mobile menu close button */}
+        <Button
+          variant="ghost"
+          size="icon"
+          className="md:hidden absolute top-4 right-4"
+          onClick={onMobileClose}
+          aria-label="Close menu"
+        >
+          <Menu className="w-5 h-5" />
+        </Button>
 
-          {/* Logo */}
-          <div className="flex flex-col items-center justify-center py-4">
+        {/* Top Section - Logo */}
+        <div className="flex flex-col items-center pt-6 pb-4 w-[74px] self-start">
+          <div className="flex items-center justify-center">
             <img
               src="/nexon-logo.svg"
               alt="StudyAI"
-              className="w-9 h-9"
+              className="w-10 h-10"
             />
           </div>
         </div>
 
         {/* New Chat button */}
-        <div className="flex flex-col items-center justify-center pt-6 pb-4 w-[74px] self-start">
+        <div className="flex flex-col items-center justify-center py-4 w-[74px] self-start">
           <button
             onClick={handleNewChat}
-            className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-lg hover:bg-secondary transition-colors"
+            className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
             aria-label="Create new chat"
           >
-            <Plus className="w-6 h-6" />
-            <span className="text-[10px] text-muted-foreground mt-0.5">New</span>
+            <Plus className="w-5 h-5" />
+            <span className="text-[11px] text-muted-foreground mt-1">New</span>
           </button>
         </div>
 
-        {/* Middle Section - HOVERABLE ZONE - Icons + Chat History (Grid Layout) */}
+        {/* Middle Section - HOVERABLE ZONE - Icons + Chat History */}
         <div
-          className="flex-1 flex overflow-hidden py-6"
+          className="flex-1 flex overflow-hidden"
           onMouseEnter={handleMouseEnter}
           onMouseLeave={handleMouseLeave}
         >
-          {/* Left Column - Fixed Icons (always visible, 64px) */}
-          <div className="flex flex-col items-center space-y-3 py-3 w-[74px] flex-shrink-0">
+          {/* Left Column - Fixed Icons (always visible) */}
+          <div className="flex flex-col items-center space-y-2 w-[74px] flex-shrink-0">
             {/* AI Chat Icon */}
             <button
               onClick={handleChatClick}
               className={cn(
                 "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
                 currentView === "chat"
-                  ? "bg-secondary text-secondary-foreground"
-                  : "hover:bg-secondary"
+                  ? "bg-secondary/80 text-foreground"
+                  : "hover:bg-secondary/50 text-muted-foreground"
               )}
               aria-label="AI Chat"
               aria-current={currentView === "chat" ? "page" : undefined}
             >
-              <MessageSquare className="w-6 h-6" />
-              <span className="text-[10px] text-muted-foreground mt-0.5">Chat</span>
+              <MessageSquare className="w-5 h-5" />
+              <span className="text-[11px] mt-1">Chat</span>
             </button>
 
             {/* Studio Icon */}
@@ -204,71 +203,71 @@ export function CollapsibleSidebar({
               className={cn(
                 "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
                 currentView === "studio"
-                  ? "bg-secondary text-secondary-foreground"
-                  : "hover:bg-secondary"
+                  ? "bg-secondary/80 text-foreground"
+                  : "hover:bg-secondary/50 text-muted-foreground"
               )}
               aria-label="Studio"
               aria-current={currentView === "studio" ? "page" : undefined}
             >
-              <Sparkles className="w-6 h-6" />
-              <span className="text-[10px] text-muted-foreground mt-0.5">Studio</span>
+              <Sparkles className="w-5 h-5" />
+              <span className="text-[11px] mt-1">Studio</span>
             </button>
           </div>
 
           {/* Right Panel - Chat History (appears when expanded) */}
           {isExpanded && (
-            <div className="flex-1 flex flex-col overflow-hidden pl-4">
-              <div className="px-2 pt-2">
-                <div className="flex items-center justify-between">
-                  <p className="text-xs text-muted-foreground">
-                    {currentView === "chat" ? "Recent Chats" : "\u00A0"}
-                  </p>
+            <div className="flex-1 flex flex-col overflow-hidden pl-2 pr-3">
+              <div className="flex items-center justify-between mb-3 px-2">
+                <p className="text-sm text-muted-foreground font-medium">
+                  {currentView === "chat" ? "Recent Chats" : "\u00A0"}
+                </p>
+                {currentView === "chat" && (
                   <Button
                     variant="ghost"
                     size="icon"
                     onClick={togglePin}
-                    className="hidden md:inline-flex h-7 w-7"
+                    className="hidden md:inline-flex h-8 w-8"
                     aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
                   >
                     {isPinned ? (
-                      <PinOff className="w-3.5 h-3.5" />
+                      <PinOff className="w-4 h-4" />
                     ) : (
-                      <Pin className="w-3.5 h-3.5" />
+                      <Pin className="w-4 h-4" />
                     )}
                   </Button>
-                </div>
+                )}
               </div>
 
               {/* Chat History List */}
               {currentView === "chat" && (
-                <div className="flex-1 px-2 overflow-hidden">
+                <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
-                    <div className="space-y-1 py-2">
+                    <div className="space-y-1">
                       {chatSessions?.map((session) => (
                         <button
                           key={session.session_id}
                           onClick={() => handleSessionClick(session.session_id)}
                           className={cn(
-                            "w-full text-left p-2 rounded-md text-sm transition-colors",
-                            "hover:bg-secondary",
+                            "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors",
+                            "hover:bg-secondary/50",
                             session.session_id === sessionId
-                              ? "bg-accent text-accent-foreground"
-                              : "text-muted-foreground"
+                              ? "bg-secondary/80"
+                              : ""
                           )}
                           aria-current={
                             session.session_id === sessionId ? "true" : undefined
                           }
                         >
-                          <p className="line-clamp-2 text-xs">
+                          <p className="line-clamp-2 text-xs leading-relaxed">
                             {session.first_message}
                           </p>
-                          <p className="text-[10px] text-muted-foreground mt-1">
+                          <p className="text-[10px] text-muted-foreground mt-1.5">
                             {new Date(session.created_at).toLocaleDateString()}
                           </p>
                         </button>
                       ))}
                       {(!chatSessions || chatSessions.length === 0) && (
-                        <p className="text-xs text-muted-foreground px-2 py-4 text-center">
+                        <p className="text-xs text-muted-foreground px-3 py-4 text-center">
                           No recent chats
                         </p>
                       )}
@@ -280,23 +279,23 @@ export function CollapsibleSidebar({
           )}
         </div>
 
-        {/* Bottom Section - Theme & Account (NO HOVER) */}
-        <div className="py-5 flex flex-col items-center space-y-3 w-[74px] self-start">
+        {/* Bottom Section - Theme & Account */}
+        <div className="py-4 flex flex-col items-center space-y-2 w-[74px] self-start border-t border-border/50">
           {/* Theme Toggle */}
           <div className="flex flex-col items-center justify-center">
             <ThemeToggle />
-            <span className="text-[10px] text-muted-foreground mt-0.5">Theme</span>
+            <span className="text-[11px] text-muted-foreground mt-1">Theme</span>
           </div>
 
           {/* Account Dropdown */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <button
-                className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary transition-colors"
+                className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
                 aria-label="Account settings"
               >
-                <User className="w-6 h-6" />
-                <span className="text-[10px] text-muted-foreground mt-0.5">Account</span>
+                <User className="w-5 h-5" />
+                <span className="text-[11px] text-muted-foreground mt-1">Account</span>
               </button>
             </DropdownMenuTrigger>
             <DropdownMenuContent align="end" className="w-56">
