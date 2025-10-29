@@ -21,11 +21,13 @@ import {
   PinOff,
   User,
   Menu,
+  Home,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { useDashboard } from "@/contexts/DashboardContext";
-import { useNavigate } from "react-router-dom";
+import { useNotebook } from "@/contexts/NotebookContext";
+import { useNavigate, useParams, useLocation } from "react-router-dom";
 
 interface ChatSession {
   session_id: string;
@@ -45,6 +47,8 @@ export function CollapsibleSidebar({
   onMobileClose,
 }: CollapsibleSidebarProps) {
   const navigate = useNavigate();
+  const location = useLocation();
+  const { notebookId } = useParams<{ notebookId: string }>();
   const {
     isExpanded,
     isPinned,
@@ -55,11 +59,17 @@ export function CollapsibleSidebar({
 
   const { currentView, setCurrentView, sessionId, setSessionId, createNewSession } =
     useDashboard();
+  
+  const { currentNotebook } = useNotebook();
+  const isInsideNotebook = !!notebookId;
+  const isOnNotebooksPage = location.pathname === "/notebooks";
 
-  // Fetch chat sessions
+  // Fetch chat sessions for current notebook
   const { data: chatSessions } = useQuery({
-    queryKey: ["chat-sessions"],
+    queryKey: ["chat-sessions", notebookId],
     queryFn: async () => {
+      if (!isInsideNotebook || !notebookId) return [];
+
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("User not authenticated");
 
@@ -70,6 +80,7 @@ export function CollapsibleSidebar({
         .from("chat_histories")
         .select("session_id, created_at, content")
         .eq("user_id", userData.user.id)
+        .eq("notebook_id", notebookId)
         .eq("message_type", "user")
         .gte("created_at", oneWeekAgo.toISOString())
         .order("created_at", { ascending: false });
@@ -92,6 +103,7 @@ export function CollapsibleSidebar({
 
       return Array.from(sessionMap.values());
     },
+    enabled: isInsideNotebook,
   });
 
   const handleNewChat = () => {
@@ -99,12 +111,23 @@ export function CollapsibleSidebar({
     if (onMobileClose) onMobileClose();
   };
 
+  const handleHomeClick = () => {
+    navigate("/notebooks");
+    if (onMobileClose) onMobileClose();
+  };
+
   const handleChatClick = () => {
-    setCurrentView("chat");
+    if (notebookId) {
+      setCurrentView("chat");
+      navigate(`/chat/${notebookId}`);
+    }
   };
 
   const handleStudioClick = () => {
-    setCurrentView("studio");
+    if (notebookId) {
+      setCurrentView("studio");
+      navigate(`/studio/${notebookId}`);
+    }
     if (onMobileClose) onMobileClose();
   };
 
@@ -161,17 +184,19 @@ export function CollapsibleSidebar({
           </div>
         </div>
 
-        {/* New Chat button */}
-        <div className="flex flex-col items-center justify-center pb-8 w-[74px] self-start">
-          <button
-            onClick={handleNewChat}
-            className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
-            aria-label="Create new chat"
-          >
-            <Plus className="w-5 h-5" />
-            <span className="text-[11px] text-muted-foreground mt-1">New</span>
-          </button>
-        </div>
+        {/* New Chat button - Only when inside notebook */}
+        {isInsideNotebook && (
+          <div className="flex flex-col items-center justify-center pb-8 w-[74px] self-start">
+            <button
+              onClick={handleNewChat}
+              className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
+              aria-label="Create new chat"
+            >
+              <Plus className="w-5 h-5" />
+              <span className="text-[11px] text-muted-foreground mt-1">New</span>
+            </button>
+          </div>
+        )}
 
         {/* Middle Section - HOVERABLE ZONE - Icons + Chat History */}
         <div
@@ -181,47 +206,77 @@ export function CollapsibleSidebar({
         >
           {/* Left Column - Fixed Icons (always visible) */}
           <div className="flex flex-col items-center space-y-2 w-[74px] flex-shrink-0">
-            {/* AI Chat Icon */}
+            {/* Home Icon - Always visible */}
             <button
-              onClick={handleChatClick}
+              onClick={handleHomeClick}
               className={cn(
                 "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
-                currentView === "chat"
+                isOnNotebooksPage
                   ? "bg-secondary/80 text-foreground"
                   : "hover:bg-secondary/50 text-muted-foreground"
               )}
-              aria-label="AI Chat"
-              aria-current={currentView === "chat" ? "page" : undefined}
+              aria-label="Home"
+              aria-current={isOnNotebooksPage ? "page" : undefined}
             >
-              <MessageSquare className="w-5 h-5" />
-              <span className="text-[11px] mt-1">Chat</span>
+              <Home className="w-5 h-5" />
+              <span className="text-[11px] mt-1">Home</span>
             </button>
 
-            {/* Studio Icon */}
-            <button
-              onClick={handleStudioClick}
-              className={cn(
-                "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
-                currentView === "studio"
-                  ? "bg-secondary/80 text-foreground"
-                  : "hover:bg-secondary/50 text-muted-foreground"
-              )}
-              aria-label="Studio"
-              aria-current={currentView === "studio" ? "page" : undefined}
-            >
-              <Sparkles className="w-5 h-5" />
-              <span className="text-[11px] mt-1">Studio</span>
-            </button>
+            {/* AI Chat Icon - Only visible inside notebook */}
+            {isInsideNotebook && (
+              <button
+                onClick={handleChatClick}
+                className={cn(
+                  "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
+                  currentView === "chat"
+                    ? "bg-secondary/80 text-foreground"
+                    : "hover:bg-secondary/50 text-muted-foreground"
+                )}
+                aria-label="AI Chat"
+                aria-current={currentView === "chat" ? "page" : undefined}
+              >
+                <MessageSquare className="w-5 h-5" />
+                <span className="text-[11px] mt-1">Chat</span>
+              </button>
+            )}
+
+            {/* Studio Icon - Only visible inside notebook */}
+            {isInsideNotebook && (
+              <button
+                onClick={handleStudioClick}
+                className={cn(
+                  "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
+                  currentView === "studio"
+                    ? "bg-secondary/80 text-foreground"
+                    : "hover:bg-secondary/50 text-muted-foreground"
+                )}
+                aria-label="Studio"
+                aria-current={currentView === "studio" ? "page" : undefined}
+              >
+                <Sparkles className="w-5 h-5" />
+                <span className="text-[11px] mt-1">Studio</span>
+              </button>
+            )}
           </div>
 
-          {/* Right Panel - Chat History (appears when expanded) */}
+          {/* Right Panel - Current Notebook Name + Chat History (appears when expanded) */}
           {isExpanded && (
             <div className="flex-1 flex flex-col overflow-hidden pl-2 pr-3">
+              {/* Current Notebook Display */}
+              {isInsideNotebook && currentNotebook && (
+                <div className="mb-4 px-2">
+                  <div className="flex items-center gap-3">
+                    <span className="text-2xl">{currentNotebook.icon}</span>
+                    <span className="text-sm font-medium truncate">{currentNotebook.name}</span>
+                  </div>
+                </div>
+              )}
+
               <div className="flex items-center justify-between mb-3 px-2">
                 <p className="text-sm text-muted-foreground font-medium">
-                  {currentView === "chat" ? "Recent Chats" : "\u00A0"}
+                  {currentView === "chat" && isInsideNotebook ? "Recent Chats" : "\u00A0"}
                 </p>
-                {currentView === "chat" && (
+                {currentView === "chat" && isInsideNotebook && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -238,8 +293,8 @@ export function CollapsibleSidebar({
                 )}
               </div>
 
-              {/* Chat History List */}
-              {currentView === "chat" && (
+              {/* Chat History List - Only when inside notebook and chat view */}
+              {currentView === "chat" && isInsideNotebook && (
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
                     <div className="space-y-1">

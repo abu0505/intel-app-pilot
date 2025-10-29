@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { User } from "@supabase/supabase-js";
 import { Button } from "@/components/ui/button";
@@ -8,13 +8,50 @@ import ChatTab from "@/components/dashboard/ChatTab";
 import StudioTab from "@/components/dashboard/StudioTab";
 import { CollapsibleSidebar } from "@/components/dashboard/CollapsibleSidebar";
 import { DashboardProvider, useDashboard } from "@/contexts/DashboardContext";
+import { useNotebook } from "@/contexts/NotebookContext";
 
-function DashboardContent() {
+interface DashboardProps {
+  defaultView?: "chat" | "studio";
+}
+
+function DashboardContent({ defaultView }: DashboardProps) {
   const navigate = useNavigate();
+  const { notebookId } = useParams<{ notebookId: string }>();
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
-  const { currentView } = useDashboard();
+  const { currentView, setCurrentView } = useDashboard();
+  const { currentNotebook, setCurrentNotebook } = useNotebook();
+
+  // Set the view based on defaultView prop or current view
+  useEffect(() => {
+    if (defaultView) {
+      setCurrentView(defaultView);
+    }
+  }, [defaultView, setCurrentView]);
+
+  // Fetch notebook details if notebookId is present
+  useEffect(() => {
+    if (notebookId) {
+      fetchNotebookDetails();
+    } else {
+      setCurrentNotebook(null);
+    }
+  }, [notebookId]);
+
+  const fetchNotebookDetails = async () => {
+    if (!notebookId) return;
+
+    const { data, error } = await supabase
+      .from("notebooks")
+      .select("*")
+      .eq("id", notebookId)
+      .single();
+
+    if (!error && data) {
+      setCurrentNotebook(data);
+    }
+  };
 
   useEffect(() => {
     supabase.auth.getSession().then(({ data: { session } }) => {
@@ -94,10 +131,10 @@ function DashboardContent() {
   );
 }
 
-const Dashboard = () => {
+const Dashboard = ({ defaultView }: DashboardProps) => {
   return (
     <DashboardProvider>
-      <DashboardContent />
+      <DashboardContent defaultView={defaultView} />
     </DashboardProvider>
   );
 };

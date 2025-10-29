@@ -20,6 +20,7 @@ export type Database = {
           created_at: string | null
           id: string
           message_type: string | null
+          notebook_id: string | null
           session_id: string | null
           sources_referenced: string[] | null
           user_id: string
@@ -29,6 +30,7 @@ export type Database = {
           created_at?: string | null
           id?: string
           message_type?: string | null
+          notebook_id?: string | null
           session_id?: string | null
           sources_referenced?: string[] | null
           user_id: string
@@ -38,11 +40,20 @@ export type Database = {
           created_at?: string | null
           id?: string
           message_type?: string | null
+          notebook_id?: string | null
           session_id?: string | null
           sources_referenced?: string[] | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "chat_histories_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       embeddings: {
         Row: {
@@ -131,6 +142,7 @@ export type Database = {
           cards: Json
           created_at: string | null
           id: string
+          notebook_id: string | null
           source_ids: string[] | null
           study_algorithm: string | null
           times_studied: number | null
@@ -144,6 +156,7 @@ export type Database = {
           cards: Json
           created_at?: string | null
           id?: string
+          notebook_id?: string | null
           source_ids?: string[] | null
           study_algorithm?: string | null
           times_studied?: number | null
@@ -157,10 +170,52 @@ export type Database = {
           cards?: Json
           created_at?: string | null
           id?: string
+          notebook_id?: string | null
           source_ids?: string[] | null
           study_algorithm?: string | null
           times_studied?: number | null
           title?: string
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "flashcards_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      notebooks: {
+        Row: {
+          created_at: string | null
+          icon: string | null
+          id: string
+          is_deleted: boolean | null
+          last_opened_at: string | null
+          name: string
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          last_opened_at?: string | null
+          name: string
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          created_at?: string | null
+          icon?: string | null
+          id?: string
+          is_deleted?: boolean | null
+          last_opened_at?: string | null
+          name?: string
           updated_at?: string | null
           user_id?: string
         }
@@ -252,6 +307,7 @@ export type Database = {
           created_at: string | null
           difficulty_level: string | null
           id: string
+          notebook_id: string | null
           question_count: number | null
           questions: Json
           source_ids: string[] | null
@@ -265,6 +321,7 @@ export type Database = {
           created_at?: string | null
           difficulty_level?: string | null
           id?: string
+          notebook_id?: string | null
           question_count?: number | null
           questions: Json
           source_ids?: string[] | null
@@ -278,6 +335,7 @@ export type Database = {
           created_at?: string | null
           difficulty_level?: string | null
           id?: string
+          notebook_id?: string | null
           question_count?: number | null
           questions?: Json
           source_ids?: string[] | null
@@ -286,7 +344,15 @@ export type Database = {
           updated_at?: string | null
           user_id?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "quizzes_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       sources: {
         Row: {
@@ -297,6 +363,7 @@ export type Database = {
           id: string
           is_archived: boolean | null
           key_topics: string[] | null
+          notebook_id: string | null
           processing_status: string | null
           source_description: string | null
           source_name: string
@@ -314,6 +381,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           key_topics?: string[] | null
+          notebook_id?: string | null
           processing_status?: string | null
           source_description?: string | null
           source_name: string
@@ -331,6 +399,7 @@ export type Database = {
           id?: string
           is_archived?: boolean | null
           key_topics?: string[] | null
+          notebook_id?: string | null
           processing_status?: string | null
           source_description?: string | null
           source_name?: string
@@ -340,7 +409,41 @@ export type Database = {
           user_id?: string
           word_count?: number | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "sources_notebook_id_fkey"
+            columns: ["notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      user_preferences: {
+        Row: {
+          last_opened_notebook_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          last_opened_notebook_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          last_opened_notebook_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_preferences_last_opened_notebook_id_fkey"
+            columns: ["last_opened_notebook_id"]
+            isOneToOne: false
+            referencedRelation: "notebooks"
+            referencedColumns: ["id"]
+          },
+        ]
       }
     }
     Views: {
