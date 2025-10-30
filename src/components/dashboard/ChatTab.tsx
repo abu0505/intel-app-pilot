@@ -167,7 +167,7 @@ const ChatTab = () => {
             </p>
             
             {/* Chat Input Form */}
-            <form onSubmit={handleSubmit} className="space-y-4">
+            <form onSubmit={handleSubmit} className="relative">
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -178,12 +178,12 @@ const ChatTab = () => {
                   }
                 }}
                 placeholder="Ask me anything about your sources..."
-                className="min-h-[120px] resize-none bg-background/50 border-border/50"
+                className="min-h-[120px] resize-none bg-background/50 border-border/50 pr-48 pb-14"
                 disabled={sendMessageMutation.isPending}
               />
               
-              {/* Action Buttons */}
-              <div className="flex items-center justify-end gap-2">
+              {/* Action Buttons Inside Input */}
+              <div className="absolute bottom-3 right-3 flex items-center gap-2">
                 <Button
                   type="button"
                   variant="ghost"
