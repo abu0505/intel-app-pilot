@@ -166,39 +166,58 @@ const ChatTab = () => {
               I have access to all your uploaded sources. Ask me anything about your learning materials...
             </p>
             
-            {/* Action Buttons */}
-            <div className="flex items-center justify-end gap-2">
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
-              >
-                <Mic className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
-              >
-                <Folder className="w-5 h-5" />
-              </Button>
-              <Button
-                variant="ghost"
-                size="icon"
-                className="h-10 w-10 rounded-lg hover:bg-secondary/50"
-              >
-                <Grid3x3 className="w-5 h-5" />
-              </Button>
-              <Button
-                size="icon"
-                className="h-10 w-10 rounded-lg bg-primary hover:bg-primary/90"
-                onClick={() => {
-                  // Handle send action
+            {/* Chat Input Form */}
+            <form onSubmit={handleSubmit} className="space-y-4">
+              <Textarea
+                value={message}
+                onChange={(e) => setMessage(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && !e.shiftKey) {
+                    e.preventDefault();
+                    handleSubmit(e);
+                  }
                 }}
-              >
-                <Send className="w-5 h-5" />
-              </Button>
-            </div>
+                placeholder="Ask me anything about your sources..."
+                className="min-h-[120px] resize-none bg-background/50 border-border/50"
+                disabled={sendMessageMutation.isPending}
+              />
+              
+              {/* Action Buttons */}
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+                >
+                  <Mic className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+                >
+                  <Folder className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+                >
+                  <Grid3x3 className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="submit"
+                  size="icon"
+                  className="h-10 w-10 rounded-lg bg-primary hover:bg-primary/90"
+                  disabled={sendMessageMutation.isPending || !message.trim()}
+                >
+                  <Send className="w-5 h-5" />
+                </Button>
+              </div>
+            </form>
           </CardContent>
         </Card>
       </div>
