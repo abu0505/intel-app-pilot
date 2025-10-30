@@ -5,10 +5,11 @@ import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Mic, Folder, Grid3x3 } from "lucide-react";
+import { Send, Mic, Folder, Grid3x3, Search, Globe, Paperclip, AudioWaveform, Copy, RefreshCw, Share2 } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
+import MarkdownMessage from "./MarkdownMessage";
 
 interface Message {
   id: string;
@@ -147,27 +148,127 @@ const ChatTab = () => {
   };
 
   return (
-    <div className="flex flex-col items-center justify-center h-full w-full px-4">
-      {/* Centered Branding */}
-      <div className="flex flex-col items-center mb-12">
-        <div className="flex items-center gap-3 mb-8">
-          <img
-            src="/nexon-logo.svg"
-            alt="Nexora AI"
-            className="w-12 h-12"
-          />
-          <h1 className="text-4xl font-semibold text-foreground">Nexora AI</h1>
-        </div>
-
-        {/* Main Card */}
-        <Card className="w-full max-w-2xl bg-card/50 backdrop-blur border-border/50 shadow-lg">
-          <CardContent className="p-8">
-            <p className="text-muted-foreground text-center mb-6 leading-relaxed">
+    <div className="flex flex-col h-full w-full">
+      {/* Messages Area */}
+      <div className="flex-1 overflow-y-auto px-4 py-6">
+        {!messages || messages.length === 0 ? (
+          /* Empty State - Centered Branding */
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="flex items-center gap-3 mb-8">
+              <img
+                src="/nexon-logo.svg"
+                alt="Nexora AI"
+                className="w-12 h-12"
+              />
+              <h1 className="text-4xl font-semibold text-foreground">Nexora AI</h1>
+            </div>
+            <p className="text-muted-foreground text-center max-w-2xl mb-8 leading-relaxed">
               I have access to all your uploaded sources. Ask me anything about your learning materials...
             </p>
-            
-            {/* Chat Input Form */}
-            <form onSubmit={handleSubmit} className="relative">
+          </div>
+        ) : (
+          /* Messages Display */
+          <div className="max-w-4xl mx-auto space-y-6">
+            {messages.map((msg) => (
+              <div
+                key={msg.id}
+                className={`flex ${msg.message_type === "user" ? "justify-end" : "justify-start"}`}
+              >
+                <div
+                  className={`max-w-[80%] rounded-2xl p-4 ${
+                    msg.message_type === "user"
+                      ? "bg-primary/10 border border-primary/20"
+                      : "bg-muted/50 border border-border/50"
+                  }`}
+                >
+                  <div className="prose prose-sm dark:prose-invert max-w-none">
+                    <MarkdownMessage content={msg.content} />
+                  </div>
+                  
+                  {/* Source Citations */}
+                  {msg.sources_referenced && msg.sources_referenced.length > 0 && (
+                    <div className="mt-3 pt-3 border-t border-border/50">
+                      <p className="text-xs text-muted-foreground mb-2">Sources:</p>
+                      <div className="flex flex-wrap gap-2">
+                        {msg.sources_referenced.map((source, idx) => (
+                          <span
+                            key={idx}
+                            className="text-xs bg-background/50 px-2 py-1 rounded-md border border-border/30"
+                          >
+                            {source}
+                          </span>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  {/* Message Actions */}
+                  {msg.message_type === "assistant" && msg.content !== "..." && (
+                    <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => copyMessage(msg.content, msg.id)}
+                      >
+                        <Copy className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={regenerateMessage}
+                      >
+                        <RefreshCw className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="h-8 w-8"
+                        onClick={() => shareMessage(msg.content)}
+                      >
+                        <Share2 className="w-4 h-4" />
+                      </Button>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {new Date(msg.created_at).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            ))}
+            <div ref={messagesEndRef} />
+          </div>
+        )}
+      </div>
+
+      {/* Input Area - Fixed at Bottom */}
+      <div className="border-t border-border/50 bg-background/95 backdrop-blur-sm">
+        <div className="max-w-5xl mx-auto px-4 py-4">
+          <form onSubmit={handleSubmit} className="relative">
+            <div className="flex items-end gap-3 bg-muted/30 border border-border/50 rounded-3xl p-3 focus-within:border-primary/50 transition-colors">
+              {/* Left Icons */}
+              <div className="flex items-center gap-2 pb-2">
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 hover:text-cyan-300 transition-all"
+                >
+                  <Search className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl hover:bg-muted/50 transition-all"
+                >
+                  <Paperclip className="w-5 h-5" />
+                </Button>
+              </div>
+
+              {/* Textarea */}
               <Textarea
                 value={message}
                 onChange={(e) => setMessage(e.target.value)}
@@ -177,18 +278,35 @@ const ChatTab = () => {
                     handleSubmit(e);
                   }
                 }}
-                placeholder="Ask me anything about your sources..."
-                className="min-h-[120px] resize-none bg-background/50 border-border/50 pr-48 pb-14"
+                placeholder="Ask anything about your study materials..."
+                className="flex-1 min-h-[48px] max-h-[200px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
                 disabled={sendMessageMutation.isPending}
+                autoFocus
               />
-              
-              {/* Action Buttons Inside Input */}
-              <div className="absolute bottom-3 right-3 flex items-center gap-2">
+
+              {/* Right Icons */}
+              <div className="flex items-center gap-2 pb-2">
                 <Button
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+                  className="h-10 w-10 rounded-xl hover:bg-muted/50 transition-all"
+                >
+                  <Globe className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl hover:bg-muted/50 transition-all"
+                >
+                  <Grid3x3 className="w-5 h-5" />
+                </Button>
+                <Button
+                  type="button"
+                  variant="ghost"
+                  size="icon"
+                  className="h-10 w-10 rounded-xl hover:bg-muted/50 transition-all"
                 >
                   <Mic className="w-5 h-5" />
                 </Button>
@@ -196,30 +314,22 @@ const ChatTab = () => {
                   type="button"
                   variant="ghost"
                   size="icon"
-                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
+                  className="h-10 w-10 rounded-xl bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-400 hover:text-cyan-300 transition-all"
                 >
-                  <Folder className="w-5 h-5" />
-                </Button>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="icon"
-                  className="h-10 w-10 rounded-lg hover:bg-secondary/50"
-                >
-                  <Grid3x3 className="w-5 h-5" />
+                  <AudioWaveform className="w-5 h-5" />
                 </Button>
                 <Button
                   type="submit"
                   size="icon"
-                  className="h-10 w-10 rounded-lg bg-primary hover:bg-primary/90"
+                  className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
                   disabled={sendMessageMutation.isPending || !message.trim()}
                 >
                   <Send className="w-5 h-5" />
                 </Button>
               </div>
-            </form>
-          </CardContent>
-        </Card>
+            </div>
+          </form>
+        </div>
       </div>
     </div>
   );
