@@ -12,7 +12,7 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { message, sessionId } = await req.json();
+    const { message, sessionId, notebookId } = await req.json();
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -33,11 +33,18 @@ serve(async (req: Request) => {
     if (!user) throw new Error("Unauthorized");
 
     // Get user's sources for context
-    const { data: sources } = await supabase
+    let sourcesQuery = supabase
       .from("sources")
       .select("content, source_name")
       .eq("user_id", user.id)
       .limit(5);
+
+    // Filter by notebook_id if provided
+    if (notebookId) {
+      sourcesQuery = sourcesQuery.eq("notebook_id", notebookId);
+    }
+
+    const { data: sources } = await sourcesQuery;
 
     const context = (sources ?? [])
       .map((s: { source_name: string | null; content: string | null }) =>
@@ -108,6 +115,7 @@ serve(async (req: Request) => {
       session_id: sessionId,
       message_type: "assistant",
       content: assistantMessage,
+      notebook_id: notebookId || null,
     });
 
     return new Response(JSON.stringify({ message: assistantMessage }), {

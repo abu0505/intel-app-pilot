@@ -19,6 +19,8 @@ import {
 import { StudyActions } from "@/components/dashboard/StudyActions";
 import QuizzesTab from "@/components/dashboard/QuizzesTab";
 import FlashcardsTab from "@/components/dashboard/FlashcardsTab";
+import { useNotebook } from "@/contexts/NotebookContext";
+import { useParams } from "react-router-dom";
 
 type StudyView = "grid" | "quiz" | "flashcards";
 
@@ -29,6 +31,8 @@ type StudioTabProps = {
 const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { notebookId } = useParams<{ notebookId: string }>();
+  const { currentNotebook } = useNotebook();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sourceType, setSourceType] = useState<string>("text");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -116,12 +120,19 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   };
 
   const { data: sources, isLoading } = useQuery({
-    queryKey: ["sources"],
+    queryKey: ["sources", notebookId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("sources")
         .select("*")
         .order("created_at", { ascending: false });
+
+      // Filter by notebook_id if inside a notebook
+      if (notebookId) {
+        query = query.eq("notebook_id", notebookId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
@@ -295,6 +306,7 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
           content: processedContent,
           source_description: null,
           word_count: processedContent ? processedContent.split(/\s+/).length : 0,
+          notebook_id: notebookId || null,
         })
         .select()
         .single();
@@ -362,8 +374,39 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
 
       return data;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["sources"] });
+    onSuccess: async (data) => {
+      queryClient.invalidateQueries({ queryKey: ["sources", notebookId] });
+
+      // If this is the first source in the notebook, generate notebook name
+      if (notebookId && currentNotebook?.name === "Untitled Notebook") {
+        try {
+          const { data: sourceData } = await supabase
+            .from("sources")
+            .select("content")
+            .eq("id", data.id)
+            .single();
+
+          if (sourceData?.content) {
+            const { data: nameData } = await supabase.functions.invoke("generate-notebook-name", {
+              body: {
+                sourceContent: sourceData.content,
+                sourceTitle: data.source_name,
+                notebookId,
+              },
+            });
+
+            if (nameData?.success) {
+              queryClient.invalidateQueries({ queryKey: ["notebooks"] });
+              toast({
+                title: "Notebook renamed",
+                description: `Renamed to "${nameData.name}"`,
+              });
+            }
+          }
+        } catch (error) {
+          console.error("Failed to generate notebook name:", error);
+        }
+      }
       
       if (sourceType === "youtube") {
         toast({

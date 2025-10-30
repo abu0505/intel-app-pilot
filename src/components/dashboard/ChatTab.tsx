@@ -7,6 +7,8 @@ import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { Send, Mic, Folder, Grid3x3 } from "lucide-react";
 import { useDashboard } from "@/contexts/DashboardContext";
+import { useNotebook } from "@/contexts/NotebookContext";
+import { useParams } from "react-router-dom";
 
 interface Message {
   id: string;
@@ -25,6 +27,8 @@ interface ChatSession {
 const ChatTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { notebookId } = useParams<{ notebookId: string }>();
+  const { currentNotebook } = useNotebook();
   const { sessionId } = useDashboard();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -32,13 +36,20 @@ const ChatTab = () => {
 
 
   const { data: messages, isLoading } = useQuery({
-    queryKey: ["chat-messages", sessionId],
+    queryKey: ["chat-messages", sessionId, notebookId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("chat_histories")
         .select("*")
         .eq("session_id", sessionId)
         .order("created_at", { ascending: true });
+
+      // Filter by notebook_id if inside a notebook
+      if (notebookId) {
+        query = query.eq("notebook_id", notebookId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data as Message[];
@@ -56,6 +67,7 @@ const ChatTab = () => {
         session_id: sessionId,
         message_type: "user",
         content,
+        notebook_id: notebookId || null,
       });
 
       if (saveError) throw saveError;
@@ -66,20 +78,21 @@ const ChatTab = () => {
         session_id: sessionId,
         message_type: "assistant",
         content: "...",
+        notebook_id: notebookId || null,
       });
 
-      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId, notebookId] });
 
       // Call chat edge function
       const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: { message: content, sessionId },
+        body: { message: content, sessionId, notebookId },
       });
 
       if (error) throw error;
       return data;
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId] });
+      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId, notebookId] });
       setMessage("");
     },
     onError: (error: Error & { context?: { error?: string } }) => {
