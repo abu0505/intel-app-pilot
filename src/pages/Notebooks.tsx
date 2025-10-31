@@ -38,7 +38,7 @@ const NotebooksContent = () => {
 
   useEffect(() => {
     fetchNotebooks();
-  }, [fetchNotebooks]);
+  }, []);
 
   const handleCreateNotebook = async () => {
     const notebookId = await createNotebook();
