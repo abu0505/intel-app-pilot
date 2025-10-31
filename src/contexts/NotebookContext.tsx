@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode, useCallback, useRef } from "react";
+import { createContext, useContext, useState, ReactNode, useCallback, useRef } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -20,7 +20,7 @@ interface NotebookContextType {
   setCurrentNotebook: (notebook: Notebook | null) => void;
   notebooks: Notebook[];
   loading: boolean;
-  fetchNotebooks: () => Promise<void>;
+  fetchNotebooks: (force?: boolean) => Promise<void>;
   createNotebook: () => Promise<string | null>;
   updateNotebook: (id: string, updates: Partial<Notebook>) => Promise<void>;
   deleteNotebook: (id: string) => Promise<void>;
@@ -36,15 +36,30 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const navigate = useNavigate();
   const fetchingRef = useRef(false);
+  const hasInitializedRef = useRef(false);
 
-  const fetchNotebooks = useCallback(async () => {
-    if (fetchingRef.current) return;
+  const fetchNotebooks = useCallback(async (force = false) => {
+    // Prevent concurrent fetches
+    if (fetchingRef.current) {
+      console.log('Already fetching notebooks, skipping...');
+      return;
+    }
+    
+    // Prevent re-fetch on every render unless forced
+    if (!force && hasInitializedRef.current) {
+      console.log('Notebooks already initialized, skipping...');
+      return;
+    }
+    
     fetchingRef.current = true;
     setLoading(true);
+    
     try {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) {
         setNotebooks([]);
+        setLoading(false);
+        fetchingRef.current = false;
         return;
       }
 
@@ -63,6 +78,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
       }));
 
       setNotebooks(notebooksWithCount || []);
+      hasInitializedRef.current = true;
     } catch (error) {
       console.error("Error fetching notebooks:", error);
       toast({
@@ -98,7 +114,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
         description: "Notebook created successfully",
       });
 
-      await fetchNotebooks();
+      await fetchNotebooks(true);
       return data.id;
     } catch (error) {
       console.error("Error creating notebook:", error);
@@ -125,7 +141,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
         description: "Notebook updated successfully",
       });
 
-      await fetchNotebooks();
+      await fetchNotebooks(true);
       
       if (currentNotebook?.id === id) {
         setCurrentNotebook({ ...currentNotebook, ...updates });
@@ -154,7 +170,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
         description: "Notebook deleted successfully",
       });
 
-      await fetchNotebooks();
+      await fetchNotebooks(true);
       
       if (currentNotebook?.id === id) {
         setCurrentNotebook(null);
