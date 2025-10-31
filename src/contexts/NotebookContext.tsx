@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from "react";
+import { createContext, useContext, useState, useEffect, ReactNode, useCallback } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
@@ -36,7 +36,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
   const { toast } = useToast();
   const navigate = useNavigate();
 
-  const fetchNotebooks = async () => {
+  const fetchNotebooks = useCallback(async () => {
     setLoading(true);
     try {
       const { data: { user } } = await supabase.auth.getUser();
@@ -67,7 +67,7 @@ export function NotebookProvider({ children }: { children: ReactNode }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [toast]);
 
   const createNotebook = async (): Promise<string | null> => {
     try {

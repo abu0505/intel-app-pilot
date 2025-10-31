@@ -10,6 +10,7 @@ import { useDashboard } from "@/contexts/DashboardContext";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
 import MarkdownMessage from "./MarkdownMessage";
+import { LoadingMessage } from "./LoadingMessage";
 
 interface Message {
   id: string;
@@ -73,23 +74,21 @@ const ChatTab = () => {
 
       if (saveError) throw saveError;
 
-      // Add temporary loading message
-      await supabase.from("chat_histories").insert({
-        user_id: userData.user.id,
-        session_id: sessionId,
-        message_type: "assistant",
-        content: "...",
-        notebook_id: notebookId || null,
-      });
-
-      queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId, notebookId] });
-
-      // Call chat edge function
+      // Call chat edge function (no temporary "..." message in DB)
       const { data, error } = await supabase.functions.invoke("ai-chat", {
         body: { message: content, sessionId, notebookId },
       });
 
       if (error) throw error;
+
+      // Update notebook updated_at when chat message is sent
+      if (notebookId) {
+        await supabase
+          .from("notebooks")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", notebookId);
+      }
+
       return data;
     },
     onSuccess: () => {
@@ -165,6 +164,7 @@ const ChatTab = () => {
             className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
             disabled={sendMessageMutation.isPending}
             autoFocus
+            dir="ltr"
           />
 
           <div className="flex items-center gap-2 pb-2">
@@ -239,7 +239,7 @@ const ChatTab = () => {
                   )}
                   
                   {/* Message Actions */}
-                  {msg.message_type === "assistant" && msg.content !== "..." && (
+                  {msg.message_type === "assistant" && (
                     <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2">
                       <Button
                         variant="ghost"
@@ -274,6 +274,16 @@ const ChatTab = () => {
                 </div>
               </div>
             ))}
+
+            {/* Show loading animation while AI is responding */}
+            {sendMessageMutation.isPending && (
+              <div className="flex justify-start">
+                <div className="max-w-[80%]">
+                  <LoadingMessage />
+                </div>
+              </div>
+            )}
+
             <div ref={messagesEndRef} />
           </div>
         )}

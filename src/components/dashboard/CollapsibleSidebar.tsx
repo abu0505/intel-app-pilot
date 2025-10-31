@@ -1,5 +1,8 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
+import { useToast } from "@/hooks/use-toast";
+import { useState } from "react";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { ThemeToggle } from "@/components/theme-toggle";
@@ -22,6 +25,7 @@ import {
   User,
   Menu,
   Home,
+  Trash2,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
@@ -52,6 +56,11 @@ export function CollapsibleSidebar({
   const navigate = useNavigate();
   const location = useLocation();
   const { notebookId } = useParams<{ notebookId: string }>();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [sessionToDelete, setSessionToDelete] = useState<string | null>(null);
+  
   const {
     isExpanded,
     isPinned,
@@ -147,6 +156,52 @@ export function CollapsibleSidebar({
     setSessionId(session_id);
     setCurrentView("chat");
     if (onMobileClose) onMobileClose();
+  };
+
+  const deleteChatMutation = useMutation({
+    mutationFn: async (session_id: string) => {
+      const { error } = await supabase
+        .from("chat_histories")
+        .delete()
+        .eq("session_id", session_id)
+        .eq("notebook_id", notebookId);
+      
+      if (error) throw error;
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["chat-sessions", notebookId] });
+      toast({
+        title: "Chat deleted",
+        description: "The chat session has been removed.",
+      });
+      
+      // If deleted session is current, create new one
+      if (sessionToDelete === sessionId) {
+        createNewSession();
+      }
+      
+      setDeleteDialogOpen(false);
+      setSessionToDelete(null);
+    },
+    onError: (error: Error) => {
+      toast({
+        variant: "destructive",
+        title: "Failed to delete chat",
+        description: error.message,
+      });
+    },
+  });
+
+  const handleDeleteChat = (session_id: string, e: React.MouseEvent) => {
+    e.stopPropagation();
+    setSessionToDelete(session_id);
+    setDeleteDialogOpen(true);
+  };
+
+  const confirmDeleteChat = () => {
+    if (sessionToDelete) {
+      deleteChatMutation.mutate(sessionToDelete);
+    }
   };
 
   const sidebarWidth = isExpanded ? "280px" : "74px";
@@ -314,27 +369,36 @@ export function CollapsibleSidebar({
                   <ScrollArea className="h-full">
                     <div className="space-y-1">
                       {chatSessions?.map((session) => (
-                        <button
+                        <div
                           key={session.session_id}
-                          onClick={() => handleSessionClick(session.session_id)}
                           className={cn(
-                            "w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors",
-                            "hover:bg-secondary/50",
-                            session.session_id === sessionId
-                              ? "bg-secondary/80"
-                              : ""
+                            "group relative w-full rounded-lg transition-colors hover:bg-secondary/50",
+                            session.session_id === sessionId ? "bg-secondary/80" : ""
                           )}
-                          aria-current={
-                            session.session_id === sessionId ? "true" : undefined
-                          }
                         >
-                          <p className="line-clamp-2 text-xs leading-relaxed">
-                            {session.first_message}
-                          </p>
-                          <p className="text-[10px] text-muted-foreground mt-1.5">
-                            {new Date(session.created_at).toLocaleDateString()}
-                          </p>
-                        </button>
+                          <button
+                            onClick={() => handleSessionClick(session.session_id)}
+                            className="w-full text-left px-3 py-2.5 pr-10"
+                            aria-current={
+                              session.session_id === sessionId ? "true" : undefined
+                            }
+                          >
+                            <p className="line-clamp-2 text-xs leading-relaxed">
+                              {session.first_message}
+                            </p>
+                            <p className="text-[10px] text-muted-foreground mt-1.5">
+                              {new Date(session.created_at).toLocaleDateString()}
+                            </p>
+                          </button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="absolute right-2 top-1/2 -translate-y-1/2 h-6 w-6 opacity-0 group-hover:opacity-100 transition-opacity"
+                            onClick={(e) => handleDeleteChat(session.session_id, e)}
+                          >
+                            <Trash2 className="h-3 w-3 text-destructive" />
+                          </Button>
+                        </div>
                       ))}
                       {(!chatSessions || chatSessions.length === 0) && (
                         <p className="text-xs text-muted-foreground px-3 py-4 text-center">
@@ -437,6 +501,27 @@ export function CollapsibleSidebar({
           </DropdownMenu>
         </div>
       </aside>
+
+      {/* Delete Confirmation Dialog */}
+      <AlertDialog open={deleteDialogOpen} onOpenChange={setDeleteDialogOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Chat Session?</AlertDialogTitle>
+            <AlertDialogDescription>
+              This action cannot be undone. This will permanently delete this chat session and all its messages.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={confirmDeleteChat}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </>
   );
 }

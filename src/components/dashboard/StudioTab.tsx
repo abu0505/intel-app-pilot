@@ -377,6 +377,14 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
     onSuccess: async (data) => {
       queryClient.invalidateQueries({ queryKey: ["sources", notebookId] });
 
+      // Update notebook updated_at when source is added
+      if (notebookId) {
+        await supabase
+          .from("notebooks")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", notebookId);
+      }
+
       // If this is the first source in the notebook, generate notebook name
       if (notebookId && currentNotebook?.name === "Untitled Notebook") {
         try {
