@@ -12,11 +12,12 @@ import { Input } from "@/components/ui/input";
 import { useQuizzes } from "@/hooks/use-quizzes";
 
 type QuizzesTabProps = {
+  notebookId?: string;
   onBackToStudio?: () => void;
   initialQuizId?: string;
 };
 
-const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
+const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [showGenerateForm, setShowGenerateForm] = useState(false);
@@ -24,7 +25,7 @@ const QuizzesTab = ({ onBackToStudio, initialQuizId }: QuizzesTabProps) => {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
 
-  const { quizzes, isLoading, generateQuizMutation } = useQuizzes();
+  const { quizzes, isLoading, generateQuizMutation } = useQuizzes(notebookId);
 
   useEffect(() => {
     if (!initialQuizId || !quizzes?.length) return;

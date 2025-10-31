@@ -28,6 +28,9 @@ import { useSidebarState } from "@/hooks/use-sidebar-state";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useNavigate, useParams, useLocation } from "react-router-dom";
+import { useFlashcards } from "@/hooks/use-flashcards";
+import { useQuizzes } from "@/hooks/use-quizzes";
+import { useEffect } from "react";
 
 interface ChatSession {
   session_id: string;
@@ -60,9 +63,18 @@ export function CollapsibleSidebar({
   const { currentView, setCurrentView, sessionId, setSessionId, createNewSession } =
     useDashboard();
   
-  const { currentNotebook } = useNotebook();
+  const { currentNotebook, notebooks, fetchNotebooks, openNotebook } = useNotebook();
+  const { flashcards } = useFlashcards(notebookId);
+  const { quizzes } = useQuizzes(notebookId);
+
   const isInsideNotebook = !!notebookId;
   const isOnNotebooksPage = location.pathname === "/notebooks";
+
+  useEffect(() => {
+    if (isOnNotebooksPage) {
+      fetchNotebooks();
+    }
+  }, [isOnNotebooksPage, fetchNotebooks]);
 
   // Fetch chat sessions for current notebook
   const { data: chatSessions } = useQuery({
@@ -185,18 +197,17 @@ export function CollapsibleSidebar({
         </div>
 
         {/* New Chat button - Only when inside notebook */}
-        {isInsideNotebook && (
-          <div className="flex flex-col items-center justify-center pb-8 w-[74px] self-start">
-            <button
-              onClick={handleNewChat}
-              className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
-              aria-label="Create new chat"
-            >
-              <Plus className="w-5 h-5" />
-              <span className="text-[11px] text-muted-foreground mt-1">New</span>
-            </button>
-          </div>
-        )}
+        <div className="flex flex-col items-center justify-center pb-8 w-[74px] self-start">
+          <button
+            onClick={handleNewChat}
+            className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+            aria-label="Create new chat"
+            disabled={!isInsideNotebook}
+          >
+            <Plus className="w-5 h-5" />
+            <span className="text-[11px] text-muted-foreground mt-1">New</span>
+          </button>
+        </div>
 
         {/* Middle Section - HOVERABLE ZONE - Icons + Chat History */}
         <div
@@ -223,40 +234,38 @@ export function CollapsibleSidebar({
             </button>
 
             {/* AI Chat Icon - Only visible inside notebook */}
-            {isInsideNotebook && (
-              <button
-                onClick={handleChatClick}
-                className={cn(
-                  "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
-                  currentView === "chat"
-                    ? "bg-secondary/80 text-foreground"
-                    : "hover:bg-secondary/50 text-muted-foreground"
-                )}
-                aria-label="AI Chat"
-                aria-current={currentView === "chat" ? "page" : undefined}
-              >
-                <MessageSquare className="w-5 h-5" />
-                <span className="text-[11px] mt-1">Chat</span>
-              </button>
-            )}
+            <button
+              onClick={handleChatClick}
+              className={cn(
+                "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                currentView === "chat" && isInsideNotebook
+                  ? "bg-secondary/80 text-foreground"
+                  : "hover:bg-secondary/50 text-muted-foreground"
+              )}
+              aria-label="AI Chat"
+              aria-current={currentView === "chat" && isInsideNotebook ? "page" : undefined}
+              disabled={!isInsideNotebook}
+            >
+              <MessageSquare className="w-5 h-5" />
+              <span className="text-[11px] mt-1">Chat</span>
+            </button>
 
             {/* Studio Icon - Only visible inside notebook */}
-            {isInsideNotebook && (
-              <button
-                onClick={handleStudioClick}
-                className={cn(
-                  "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors",
-                  currentView === "studio"
-                    ? "bg-secondary/80 text-foreground"
-                    : "hover:bg-secondary/50 text-muted-foreground"
-                )}
-                aria-label="Studio"
-                aria-current={currentView === "studio" ? "page" : undefined}
-              >
-                <Sparkles className="w-5 h-5" />
-                <span className="text-[11px] mt-1">Studio</span>
-              </button>
-            )}
+            <button
+              onClick={handleStudioClick}
+              className={cn(
+                "flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed",
+                currentView === "studio" && isInsideNotebook
+                  ? "bg-secondary/80 text-foreground"
+                  : "hover:bg-secondary/50 text-muted-foreground"
+              )}
+              aria-label="Studio"
+              aria-current={currentView === "studio" && isInsideNotebook ? "page" : undefined}
+              disabled={!isInsideNotebook}
+            >
+              <Sparkles className="w-5 h-5" />
+              <span className="text-[11px] mt-1">Studio</span>
+            </button>
           </div>
 
           {/* Right Panel - Current Notebook Name + Chat History (appears when expanded) */}
@@ -274,9 +283,15 @@ export function CollapsibleSidebar({
 
               <div className="flex items-center justify-between mb-3 px-2">
                 <p className="text-sm text-muted-foreground font-medium">
-                  {currentView === "chat" && isInsideNotebook ? "Recent Chats" : "\u00A0"}
+                  {currentView === "chat" && isInsideNotebook
+                    ? "Recent Chats"
+                    : currentView === "studio" && isInsideNotebook
+                    ? "Studio Content"
+                    : isOnNotebooksPage
+                    ? "Notebooks"
+                    : "\u00A0"}
                 </p>
-                {currentView === "chat" && isInsideNotebook && (
+                {(isInsideNotebook || isOnNotebooksPage) && (
                   <Button
                     variant="ghost"
                     size="icon"
@@ -326,6 +341,53 @@ export function CollapsibleSidebar({
                           No recent chats
                         </p>
                       )}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Studio Content List */}
+              {currentView === "studio" && isInsideNotebook && (
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <div className="space-y-1">
+                      <p className="text-xs text-muted-foreground px-3 py-2 font-semibold">Flashcards</p>
+                      {flashcards?.map((flashcard) => (
+                        <button
+                          key={flashcard.id}
+                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
+                        >
+                          <p className="line-clamp-2 text-xs leading-relaxed">{flashcard.title}</p>
+                        </button>
+                      ))}
+                      <p className="text-xs text-muted-foreground px-3 py-2 font-semibold">Quizzes</p>
+                      {quizzes?.map((quiz) => (
+                        <button
+                          key={quiz.id}
+                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
+                        >
+                          <p className="line-clamp-2 text-xs leading-relaxed">{quiz.title}</p>
+                        </button>
+                      ))}
+                    </div>
+                  </ScrollArea>
+                </div>
+              )}
+
+              {/* Notebooks List */}
+              {isOnNotebooksPage && (
+                <div className="flex-1 overflow-hidden">
+                  <ScrollArea className="h-full">
+                    <div className="space-y-1">
+                      {notebooks.map((notebook) => (
+                        <button
+                          key={notebook.id}
+                          onClick={() => openNotebook(notebook.id)}
+                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
+                        >
+                          <p className="line-clamp-2 text-xs leading-relaxed">{notebook.name}</p>
+                        </button>
+                      ))}
                     </div>
                   </ScrollArea>
                 </div>

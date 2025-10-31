@@ -37,16 +37,22 @@ export const DEFAULT_FLASHCARD_OPTIONS: Required<Pick<GenerateFlashcardOptions, 
   difficulty: "medium",
 };
 
-export function useFlashcards() {
+export function useFlashcards(notebookId?: string) {
   const queryClient = useQueryClient();
 
   const flashcardsQuery = useQuery<FlashcardSet[]>({
-    queryKey: ["flashcards"],
+    queryKey: ["flashcards", notebookId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("flashcards")
         .select("id, title, cards, card_count, times_studied, average_retention_percentage, created_at, updated_at")
         .order("created_at", { ascending: false });
+
+      if (notebookId) {
+        query = query.eq("notebook_id", notebookId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
 

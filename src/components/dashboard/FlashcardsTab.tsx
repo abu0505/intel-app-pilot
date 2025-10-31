@@ -22,11 +22,12 @@ import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
 
 type FlashcardsTabProps = {
+  notebookId?: string;
   onBackToStudio?: () => void;
   initialFlashcardId?: string;
 };
 
-export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: FlashcardsTabProps) {
+export default function FlashcardsTab({ notebookId, onBackToStudio, initialFlashcardId }: FlashcardsTabProps) {
   const [showForm, setShowForm] = useState(false);
   const [cardCount, setCardCount] = useState(15);
   const [selectedFlashcard, setSelectedFlashcard] = useState<FlashcardSet | null>(null);
@@ -40,7 +41,7 @@ export default function FlashcardsTab({ onBackToStudio, initialFlashcardId }: Fl
     sources,
     generateFlashcardsMutation,
     deleteFlashcardsMutation,
-  } = useFlashcards();
+  } = useFlashcards(notebookId);
 
   useEffect(() => {
     if (!initialFlashcardId || !flashcards?.length) return;

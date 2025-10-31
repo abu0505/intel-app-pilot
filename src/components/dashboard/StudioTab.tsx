@@ -491,6 +491,7 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   if (view === "quiz") {
     return (
       <QuizzesTab
+        notebookId={notebookId}
         onBackToStudio={() => {
           setView("grid");
           setSelectedQuizId(undefined);
@@ -503,6 +504,7 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   if (view === "flashcards") {
     return (
       <FlashcardsTab
+        notebookId={notebookId}
         onBackToStudio={() => {
           setView("grid");
           setSelectedFlashcardId(undefined);

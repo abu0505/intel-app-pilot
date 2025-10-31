@@ -12,16 +12,22 @@ export const DEFAULT_QUIZ_OPTIONS: Required<Pick<GenerateQuizOptions, "difficult
   questionCount: 10,
 };
 
-export function useQuizzes() {
+export function useQuizzes(notebookId?: string) {
   const queryClient = useQueryClient();
 
   const quizzesQuery = useQuery({
-    queryKey: ["quizzes"],
+    queryKey: ["quizzes", notebookId],
     queryFn: async () => {
-      const { data, error } = await supabase
+      let query = supabase
         .from("quizzes")
         .select("*")
         .order("created_at", { ascending: false });
+
+      if (notebookId) {
+        query = query.eq("notebook_id", notebookId);
+      }
+
+      const { data, error } = await query;
 
       if (error) throw error;
       return data;
