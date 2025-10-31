@@ -8,6 +8,8 @@ import { NotebookProvider } from "@/contexts/NotebookContext";
 import { ProtectedRoute } from "@/components/ProtectedRoute";
 import { ThemeProvider } from "@/components/theme-provider";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { setupAuthErrorInterceptor } from "@/lib/supabaseErrorInterceptor";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import AuthCallback from "./pages/AuthCallback";
@@ -31,83 +33,90 @@ const AuthRoute = ({ children }: { children: React.ReactNode }) => {
   return <>{children}</>;
 };
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <ThemeProvider defaultTheme="system" storageKey="app-theme">
-      <AuthProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <NotebookProvider>
-              <Routes>
-                <Route path="/" element={<Index />} />
-                <Route 
-                  path="/auth" 
-                  element={
-                    <AuthRoute>
-                      <Auth />
-                    </AuthRoute>
-                  } 
-                />
-                <Route path="/auth/callback" element={<AuthCallback />} />
-                <Route 
-                  path="/forgot-password" 
-                  element={
-                    <AuthRoute>
-                      <ForgotPassword />
-                    </AuthRoute>
-                  } 
-                />
-                <Route path="/reset-password" element={<ResetPassword />} />
-                <Route
-                  path="/change-password"
-                  element={
-                    <ProtectedRoute>
-                      <ChangePassword />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/notebooks"
-                  element={
-                    <ProtectedRoute>
-                      <Notebooks />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/dashboard"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/studio/:notebookId"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard defaultView="studio" />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route
-                  path="/chat/:notebookId"
-                  element={
-                    <ProtectedRoute>
-                      <Dashboard defaultView="chat" />
-                    </ProtectedRoute>
-                  }
-                />
-                <Route path="*" element={<NotFound />} />
-              </Routes>
-            </NotebookProvider>
-          </BrowserRouter>
-        </TooltipProvider>
-      </AuthProvider>
-    </ThemeProvider>
-  </QueryClientProvider>
-);
+const App = () => {
+  useEffect(() => {
+    const subscription = setupAuthErrorInterceptor();
+    return () => subscription.unsubscribe();
+  }, []);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <ThemeProvider defaultTheme="system" storageKey="app-theme">
+        <AuthProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <NotebookProvider>
+                <Routes>
+                  <Route path="/" element={<Index />} />
+                  <Route 
+                    path="/auth" 
+                    element={
+                      <AuthRoute>
+                        <Auth />
+                      </AuthRoute>
+                    } 
+                  />
+                  <Route path="/auth/callback" element={<AuthCallback />} />
+                  <Route 
+                    path="/forgot-password" 
+                    element={
+                      <AuthRoute>
+                        <ForgotPassword />
+                      </AuthRoute>
+                    } 
+                  />
+                  <Route path="/reset-password" element={<ResetPassword />} />
+                  <Route
+                    path="/change-password"
+                    element={
+                      <ProtectedRoute>
+                        <ChangePassword />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/notebooks"
+                    element={
+                      <ProtectedRoute>
+                        <Notebooks />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/dashboard"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/studio/:notebookId"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard defaultView="studio" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route
+                    path="/chat/:notebookId"
+                    element={
+                      <ProtectedRoute>
+                        <Dashboard defaultView="chat" />
+                      </ProtectedRoute>
+                    }
+                  />
+                  <Route path="*" element={<NotFound />} />
+                </Routes>
+              </NotebookProvider>
+            </BrowserRouter>
+          </TooltipProvider>
+        </AuthProvider>
+      </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;

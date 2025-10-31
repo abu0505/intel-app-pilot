@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
@@ -14,6 +14,24 @@ const Auth = () => {
   const [loading, setLoading] = useState(false);
   const [isLogin, setIsLogin] = useState(true);
   const [showPassword, setShowPassword] = useState(false);
+
+  useEffect(() => {
+    // Clear any invalid auth state when landing on auth page
+    const checkAndClearInvalidAuth = async () => {
+      try {
+        const { error } = await supabase.auth.getSession();
+        if (error) {
+          console.log('Clearing invalid session on auth page');
+          await supabase.auth.signOut();
+        }
+      } catch (err) {
+        console.log('Clearing session due to error');
+        await supabase.auth.signOut();
+      }
+    };
+    
+    checkAndClearInvalidAuth();
+  }, []);
 
   const handleSignUp = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
