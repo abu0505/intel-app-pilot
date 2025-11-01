@@ -150,6 +150,22 @@ const ChatTab = () => {
   const InputForm = ({ wrapperClass = "max-w-2xl mx-auto px-4 py-4" }: { wrapperClass?: string }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
     
+    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      const target = e.target;
+      const cursorPosition = target.selectionStart;
+      const newValue = target.value;
+      
+      setMessage(newValue);
+      
+      // Preserve cursor position after state update
+      requestAnimationFrame(() => {
+        if (textareaRef.current) {
+          textareaRef.current.selectionStart = cursorPosition;
+          textareaRef.current.selectionEnd = cursorPosition;
+        }
+      });
+    };
+    
     return (
       <div className={wrapperClass}>
         <form onSubmit={handleSubmit} className="relative">
@@ -157,7 +173,7 @@ const ChatTab = () => {
             <Textarea
               ref={textareaRef}
               value={message}
-              onChange={(e) => setMessage(e.target.value)}
+              onChange={handleChange}
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -169,7 +185,7 @@ const ChatTab = () => {
               disabled={sendMessageMutation.isPending}
               autoFocus
               dir="ltr"
-              style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}
+              style={{ direction: 'ltr', textAlign: 'left' }}
             />
 
             <div className="flex items-center gap-2 pb-2">
