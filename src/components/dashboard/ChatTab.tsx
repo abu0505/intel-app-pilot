@@ -156,8 +156,8 @@ const ChatTab = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
-      {/* MESSAGES AREA - SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
+      {/* SCROLLABLE CONTAINER - Messages + Input */}
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0 w-full">
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
@@ -177,12 +177,11 @@ const ChatTab = () => {
               onSubmit={handleSubmit}
               disabled={sendMessageMutation.isPending}
               wrapperClass="w-full max-w-2xl"
-              minHeight="120px"
             />
           </div>
         ) : (
-          // MESSAGES LIST
-          <div className="w-full px-4 py-4 space-y-4 max-w-[740px] mx-auto">
+          // MESSAGES LIST - CENTERED WITH FULL WIDTH
+          <div className="max-w-[740px] mx-auto w-full px-4 py-4 space-y-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
@@ -264,21 +263,20 @@ const ChatTab = () => {
             <div ref={messagesEndRef} />
           </div>
         )}
-      </div>
 
-      {/* TEXTAREA AT BOTTOM */}
-      {messages && messages.length > 0 && (
-        <div className="shrink-0 border-t border-border/30 bg-background w-full">
-          <ChatInput
-            value={message}
-            onChange={setMessage}
-            onSubmit={handleSubmit}
-            disabled={sendMessageMutation.isPending}
-            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4"
-            minHeight="90px"
-          />
-        </div>
-      )}
+        {/* STICKY INPUT AT BOTTOM - Inside scroll container for full scrollbar height */}
+        {messages && messages.length > 0 && (
+          <div className="sticky bottom-0 max-w-[740px] mx-auto w-full border-t border-border/30 bg-background py-4 px-4">
+            <ChatInput
+              value={message}
+              onChange={setMessage}
+              onSubmit={handleSubmit}
+              disabled={sendMessageMutation.isPending}
+              wrapperClass="w-full"
+            />
+          </div>
+        )}
+      </div>
     </div>
   );
 };
