@@ -155,9 +155,9 @@ const ChatTab = () => {
   };
 
   return (
-    <div className="relative flex flex-col h-full w-full bg-background overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* MESSAGES AREA - SCROLLABLE */}
-      <div className="flex-1 h-full w-full overflow-y-auto [scrollbar-gutter:stable] px-0" style={{ minHeight: 0, paddingBottom: messages && messages.length > 0 ? '140px' : '0' }}>
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
@@ -266,15 +266,15 @@ const ChatTab = () => {
         )}
       </div>
 
-      {/* TEXTAREA AT BOTTOM - FIXED POSITION */}
+      {/* TEXTAREA AT BOTTOM */}
       {messages && messages.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 border-t border-border/30 bg-background/95 backdrop-blur-sm mb-6">
+        <div className="shrink-0 border-t border-border/30 bg-background w-full">
           <ChatInput
             value={message}
             onChange={setMessage}
             onSubmit={handleSubmit}
             disabled={sendMessageMutation.isPending}
-            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4 transition-all duration-300"
+            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4"
             minHeight="90px"
           />
         </div>
