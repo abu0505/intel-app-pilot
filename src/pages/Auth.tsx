@@ -224,7 +224,9 @@ const Auth = () => {
                   type={showPassword ? "text" : "password"}
                   placeholder="••••••••"
                   required
-                  minLength={6}
+                  minLength={12}
+                  pattern="^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[^A-Za-z\d]).{12,}$"
+                  title="Password must be at least 12 characters with uppercase, lowercase, number, and special character"
                   className="h-12 pr-12"
                 />
                 <button
@@ -236,6 +238,11 @@ const Auth = () => {
                   {showPassword ? <EyeOff className="h-5 w-5" /> : <Eye className="h-5 w-5" />}
                 </button>
               </div>
+              {!isLogin && (
+                <p className="text-xs text-muted-foreground">
+                  Password must be at least 12 characters with uppercase, lowercase, number, and special character
+                </p>
+              )}
             </div>
             <Button type="submit" className="w-full h-12 text-base" disabled={loading}>
               {loading
