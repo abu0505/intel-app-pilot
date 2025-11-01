@@ -167,7 +167,7 @@ const ChatTab = () => {
                 alt="Nexora AI"
                 className="w-12 h-12 opacity-80"
               />
-              <h1 className="text-3xl font-bold text-foreground">Nexora AI</h1>
+              <h1 className="text-3xl font-bold text-foreground">Nexon AI</h1>
             </div>
 
             {/* TEXTAREA CENTER */}
