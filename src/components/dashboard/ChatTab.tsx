@@ -147,40 +147,44 @@ const ChatTab = () => {
   };
 
   // Reusable input form (used in empty state and when messages exist)
-  const InputForm = ({ wrapperClass = "max-w-2xl mx-auto px-4 py-4" }: { wrapperClass?: string }) => (
-    <div className={wrapperClass}>
-      <form onSubmit={handleSubmit} className="relative">
-        <div className="flex items-end gap-3 bg-muted/30 border border-border/50 rounded-3xl p-3 focus-within:border-primary/50 transition-colors">
-          <Textarea
-            value={message}
-            onChange={(e) => setMessage(e.target.value)}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                e.preventDefault();
-                handleSubmit(e);
-              }
-            }}
-            placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
-            className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
-            disabled={sendMessageMutation.isPending}
-            autoFocus
-            dir="ltr"
-          />
+  const InputForm = ({ wrapperClass = "max-w-2xl mx-auto px-4 py-4" }: { wrapperClass?: string }) => {
+    const textareaRef = useRef<HTMLTextAreaElement>(null);
+    
+    return (
+      <div className={wrapperClass}>
+        <form onSubmit={handleSubmit} className="relative">
+          <div className="flex items-end gap-3 bg-muted/30 border border-border/50 rounded-3xl p-3 focus-within:border-primary/50 transition-colors">
+            <Textarea
+              ref={textareaRef}
+              value={message}
+              onChange={(e) => setMessage(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  e.preventDefault();
+                  handleSubmit(e);
+                }
+              }}
+              placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
+              className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
+              disabled={sendMessageMutation.isPending}
+              autoFocus
+            />
 
-          <div className="flex items-center gap-2 pb-2">
-            <Button
-              type="submit"
-              size="icon"
-              className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-              disabled={sendMessageMutation.isPending || !message.trim()}
-            >
-              <Send className="w-5 h-5" />
-            </Button>
+            <div className="flex items-center gap-2 pb-2">
+              <Button
+                type="submit"
+                size="icon"
+                className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+                disabled={sendMessageMutation.isPending || !message.trim()}
+              >
+                <Send className="w-5 h-5" />
+              </Button>
+            </div>
           </div>
-        </div>
-      </form>
-    </div>
-  );
+        </form>
+      </div>
+    );
+  };
 
   return (
     <div className="flex flex-col h-full w-full">
@@ -197,6 +201,14 @@ const ChatTab = () => {
               />
               <h1 className="text-4xl font-semibold text-foreground">Nexora AI</h1>
             </div>
+            
+            {/* Show loading animation for first message */}
+            {sendMessageMutation.isPending && (
+              <div className="w-full max-w-2xl mb-4 px-4">
+                <LoadingMessage />
+              </div>
+            )}
+            
             {/* Centered input shown when there are no messages */}
             <div className="w-full">
               <InputForm wrapperClass="max-w-2xl mx-auto px-4 py-4" />

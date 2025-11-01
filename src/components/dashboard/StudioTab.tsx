@@ -28,11 +28,11 @@ type StudioTabProps = {
   defaultView?: StudyView;
 };
 
-const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
+  const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { notebookId } = useParams<{ notebookId: string }>();
-  const { currentNotebook } = useNotebook();
+  const { currentNotebook, updateNotebook, fetchNotebooks } = useNotebook();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sourceType, setSourceType] = useState<string>("text");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
@@ -404,7 +404,15 @@ const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
             });
 
             if (nameData?.success) {
+              // Invalidate notebooks query
               queryClient.invalidateQueries({ queryKey: ["notebooks"] });
+              
+              // Update the notebook directly
+              await updateNotebook(notebookId, { 
+                name: nameData.name,
+                icon: nameData.icon || currentNotebook.icon 
+              });
+              
               toast({
                 title: "Notebook renamed",
                 description: `Renamed to "${nameData.name}"`,

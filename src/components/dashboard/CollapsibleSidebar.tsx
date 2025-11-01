@@ -85,6 +85,14 @@ export function CollapsibleSidebar({
     }
   }, [isOnNotebooksPage, fetchNotebooks]);
 
+  // Invalidate flashcards and quizzes when switching notebooks
+  useEffect(() => {
+    if (notebookId) {
+      queryClient.invalidateQueries({ queryKey: ["flashcards", notebookId] });
+      queryClient.invalidateQueries({ queryKey: ["quizzes", notebookId] });
+    }
+  }, [notebookId, queryClient]);
+
   // Fetch chat sessions for current notebook
   const { data: chatSessions } = useQuery({
     queryKey: ["chat-sessions", notebookId],
@@ -415,24 +423,42 @@ export function CollapsibleSidebar({
                 <div className="flex-1 overflow-hidden">
                   <ScrollArea className="h-full">
                     <div className="space-y-1">
-                      <p className="text-xs text-muted-foreground px-3 py-2 font-semibold">Flashcards</p>
-                      {flashcards?.map((flashcard) => (
-                        <button
-                          key={flashcard.id}
-                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
-                        >
-                          <p className="line-clamp-2 text-xs leading-relaxed">{flashcard.title}</p>
-                        </button>
-                      ))}
-                      <p className="text-xs text-muted-foreground px-3 py-2 font-semibold">Quizzes</p>
-                      {quizzes?.map((quiz) => (
-                        <button
-                          key={quiz.id}
-                          className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
-                        >
-                          <p className="line-clamp-2 text-xs leading-relaxed">{quiz.title}</p>
-                        </button>
-                      ))}
+                      {/* Only show Flashcards section if flashcards exist */}
+                      {flashcards && flashcards.length > 0 && (
+                        <>
+                          <p className="text-xs text-muted-foreground px-3 py-2 font-semibold">Flashcards</p>
+                          {flashcards.map((flashcard) => (
+                            <button
+                              key={flashcard.id}
+                              className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
+                            >
+                              <p className="line-clamp-2 text-xs leading-relaxed">{flashcard.title}</p>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Only show Quizzes section if quizzes exist */}
+                      {quizzes && quizzes.length > 0 && (
+                        <>
+                          <p className="text-xs text-muted-foreground px-3 py-2 font-semibold mt-2">Quizzes</p>
+                          {quizzes.map((quiz) => (
+                            <button
+                              key={quiz.id}
+                              className="w-full text-left px-3 py-2.5 rounded-lg text-sm transition-colors hover:bg-secondary/50"
+                            >
+                              <p className="line-clamp-2 text-xs leading-relaxed">{quiz.title}</p>
+                            </button>
+                          ))}
+                        </>
+                      )}
+                      
+                      {/* Empty state when no flashcards or quizzes */}
+                      {(!flashcards || flashcards.length === 0) && (!quizzes || quizzes.length === 0) && (
+                        <p className="text-xs text-muted-foreground px-3 py-4 text-center">
+                          No study materials yet
+                        </p>
+                      )}
                     </div>
                   </ScrollArea>
                 </div>
