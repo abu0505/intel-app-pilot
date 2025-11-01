@@ -11,6 +11,8 @@ import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
 import MarkdownMessage from "./MarkdownMessage";
 import { LoadingMessage } from "./LoadingMessage";
+import { ChatInput } from './ChatInput';
+
 
 interface Message {
   id: string;
@@ -62,49 +64,67 @@ const ChatTab = () => {
     mutationFn: async (content: string) => {
       const { data: userData } = await supabase.auth.getUser();
       if (!userData.user) throw new Error("User not authenticated");
-
-      // Save user message
-      const { error: saveError } = await supabase.from("chat_histories").insert({
-        user_id: userData.user.id,
-        session_id: sessionId,
+      
+      // ✅ IMMEDIATELY add user message to state (optimistic)
+      const userMessage = {
+        id: `temp-${Date.now()}`,
         message_type: "user",
         content,
-        notebook_id: notebookId || null,
-      });
+        created_at: new Date().toISOString(),
+      };
+      
+      // IMMEDIATELY update query cache with user message
+      queryClient.setQueryData(
+        ["chat-messages", sessionId, notebookId],
+        (old: Message[] | undefined) => {
+          return [...(old || []), userMessage];
+        }
+      );
 
-      if (saveError) throw saveError;
+      // Reset textarea IMMEDIATELY
+      setMessage("");
 
-      // Call chat edge function (no temporary "..." message in DB)
-      const { data, error } = await supabase.functions.invoke("ai-chat", {
-        body: { message: content, sessionId, notebookId },
-      });
+      // NOW call the API in background
+      try {
+        const { error: saveError } = await supabase.from("chat_histories").insert({
+          user_id: userData.user.id,
+          session_id: sessionId,
+          message_type: "user",
+          content,
+          notebook_id: notebookId || null,
+        });
+        if (saveError) throw saveError;
 
-      if (error) throw error;
+        // Call AI
+        const { data, error } = await supabase.functions.invoke("ai-chat", {
+          body: { message: content, sessionId, notebookId },
+        });
+        if (error) throw error;
 
-      // Update notebook updated_at when chat message is sent
-      if (notebookId) {
-        await supabase
-          .from("notebooks")
-          .update({ updated_at: new Date().toISOString() })
-          .eq("id", notebookId);
+        // Update notebook
+        if (notebookId) {
+          await supabase
+            .from("notebooks")
+            .update({ updated_at: new Date().toISOString() })
+            .eq("id", notebookId);
+        }
+
+        return data;
+      } catch (error) {
+        // Rollback optimistic update on error
+        queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId, notebookId] });
+        throw error;
       }
-
-      return data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["chat-messages", sessionId, notebookId] });
-      setMessage("");
     },
-    onError: (error: Error & { context?: { error?: string } }) => {
+    onError: (error: Error) => {
       console.error("Failed to send chat message", error);
-      const description =
-        error.message === "Edge Function returned a non-2xx status code"
-          ? error.context?.error ?? "Edge Function returned a non-2xx status code"
-          : error.message;
       toast({
         variant: "destructive",
         title: "Failed to send message",
-        description,
+        description: error.message,
       });
     },
   });
@@ -146,73 +166,10 @@ const ChatTab = () => {
     }
   };
 
-  // Reusable input form (used in empty state and when messages exist)
-  const InputForm = ({ wrapperClass = "max-w-2xl mx-auto px-4 py-4" }: { wrapperClass?: string }) => {
-    const textareaRef = useRef<HTMLTextAreaElement>(null);
-    const [isComposing, setIsComposing] = useState(false);
 
-    const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      if (isComposing) {
-        // For IME, let the browser handle the input until composition ends
-        setMessage(e.target.value);
-      } else {
-        setMessage(e.target.value);
-      }
-    };
-
-    const handleComposition = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
-      if (e.type === 'compositionstart') {
-        setIsComposing(true);
-      } else if (e.type === 'compositionend') {
-        setIsComposing(false);
-        // Manually trigger onChange to update state with final composed text
-        handleChange(e as any);
-      }
-    };
-    
-    return (
-      <div className={wrapperClass}>
-        <form onSubmit={handleSubmit} className="relative">
-          <div className="flex items-end gap-3 bg-muted/30 border border-border/50 rounded-3xl p-3 focus-within:border-primary/50 transition-colors">
-            <Textarea
-              ref={textareaRef}
-              value={message}
-              onChange={handleChange}
-              onCompositionStart={handleComposition}
-              onCompositionUpdate={handleComposition}
-              onCompositionEnd={handleComposition}
-              onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey && !isComposing) {
-                  e.preventDefault();
-                  handleSubmit(e);
-                }
-              }}
-              placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
-              className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
-              disabled={sendMessageMutation.isPending}
-              autoFocus
-              dir="ltr"
-              style={{ direction: 'ltr', textAlign: 'left' }}
-            />
-
-            <div className="flex items-center gap-2 pb-2">
-              <Button
-                type="submit"
-                size="icon"
-                className="h-10 w-10 rounded-xl bg-primary hover:bg-primary/90 transition-all disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={sendMessageMutation.isPending || !message.trim()}
-              >
-                <Send className="w-5 h-5" />
-              </Button>
-            </div>
-          </div>
-        </form>
-      </div>
-    );
-  };
 
   return (
-    <div className="flex flex-col h-full w-full">
+    <div className="flex flex-col h-screen">
       {/* Messages Area */}
       <div className="flex-1 overflow-y-auto px-4 py-6">
         {!messages || messages.length === 0 ? (
@@ -233,11 +190,6 @@ const ChatTab = () => {
                 <LoadingMessage />
               </div>
             )}
-            
-            {/* Centered input shown when there are no messages */}
-            <div className="w-full">
-              <InputForm wrapperClass="max-w-2xl mx-auto px-4 py-4" />
-            </div>
           </div>
         ) : (
           /* Messages Display */
@@ -313,7 +265,7 @@ const ChatTab = () => {
             ))}
 
             {/* Show loading animation while AI is responding */}
-            {sendMessageMutation.isPending && (
+            {sendMessageMutation.isPending && messages.at(-1)?.message_type === 'user' && (
               <div className="flex justify-start">
                 <div className="max-w-[80%]">
                   <LoadingMessage />
@@ -326,10 +278,28 @@ const ChatTab = () => {
         )}
       </div>
 
-      {/* Input Area - Fixed at Bottom (only when messages exist) */}
-      {messages && messages.length > 0 && (
-        <div className="border-border/50 bg-background/95 backdrop-blur-sm">
-          <InputForm wrapperClass="max-w-2xl mx-auto px-4 py-4" />
+      {/* Textarea Position */}
+      {!messages || messages.length === 0 ? (
+        // CENTER - Empty state
+        <div className="flex items-center justify-center flex-1">
+          <ChatInput 
+            value={message} 
+            onChange={setMessage} 
+            onSubmit={handleSubmit}
+            disabled={sendMessageMutation.isPending}
+            wrapperClass="max-w-2xl w-full mx-auto px-4"
+          />
+        </div>
+      ) : (
+        // BOTTOM - After first message (with smooth transition)
+        <div className="transition-all duration-500 ease-out">
+          <ChatInput 
+            value={message} 
+            onChange={setMessage} 
+            onSubmit={handleSubmit}
+            disabled={sendMessageMutation.isPending}
+            wrapperClass="max-w-2xl mx-auto px-4 py-4 border-border/30"
+          />
         </div>
       )}
     </div>
