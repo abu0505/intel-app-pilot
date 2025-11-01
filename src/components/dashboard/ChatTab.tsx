@@ -10,6 +10,7 @@ import { useParams } from "react-router-dom";
 import MarkdownMessage from "./MarkdownMessage";
 import { LoadingMessage } from "./LoadingMessage";
 import { ChatInput } from "./ChatInput";
+import { ScrollArea } from "@/components/ui/scroll-area";
 
 interface Message {
   id: string;
@@ -155,9 +156,9 @@ const ChatTab = () => {
   };
 
   return (
-    <div className="flex flex-col h-full w-full bg-background overflow-hidden">
+    <div className="flex flex-col h-full w-full bg-background">
       {/* MESSAGES AREA - SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
+      <ScrollArea className="flex-1 min-h-0">
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
@@ -264,7 +265,7 @@ const ChatTab = () => {
             <div ref={messagesEndRef} />
           </div>
         )}
-      </div>
+      </ScrollArea>
 
       {/* TEXTAREA AT BOTTOM */}
       {messages && messages.length > 0 && (
