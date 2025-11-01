@@ -17,20 +17,18 @@ interface DashboardProps {
 function DashboardContent({ defaultView }: DashboardProps) {
   const navigate = useNavigate();
   const { notebookId } = useParams<{ notebookId: string }>();
-  const [user, setUser] = useState<User | null>(null);
+  const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const { currentView, setCurrentView } = useDashboard();
   const { currentNotebook, setCurrentNotebook } = useNotebook();
 
-  // Set the view based on defaultView prop or current view
   useEffect(() => {
     if (defaultView) {
       setCurrentView(defaultView);
     }
   }, [defaultView, setCurrentView]);
 
-  // Fetch notebook details if notebookId is present
   useEffect(() => {
     if (notebookId) {
       fetchNotebookDetails();
@@ -41,13 +39,11 @@ function DashboardContent({ defaultView }: DashboardProps) {
 
   const fetchNotebookDetails = async () => {
     if (!notebookId) return;
-
     const { data, error } = await supabase
       .from("notebooks")
       .select("*")
       .eq("id", notebookId)
       .single();
-
     if (!error && data) {
       setCurrentNotebook(data);
     }
@@ -91,17 +87,14 @@ function DashboardContent({ defaultView }: DashboardProps) {
 
   if (loading) {
     return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="animate-pulse flex items-center gap-2">
-          <Brain className="w-8 h-8 text-primary" />
-          <span className="text-xl font-semibold">Loading...</span>
-        </div>
+      <div className="flex items-center justify-center h-screen">
+        <div className="text-center">Loading...</div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background flex">
+    <div className="flex flex-row h-screen w-screen overflow-hidden bg-background">
       {/* Collapsible Sidebar */}
       <CollapsibleSidebar
         onSignOut={handleSignOut}
@@ -113,17 +106,16 @@ function DashboardContent({ defaultView }: DashboardProps) {
       <Button
         variant="ghost"
         size="icon"
-        className="md:hidden fixed top-4 left-4 z-40"
+        className="md:hidden absolute top-4 left-4 z-50"
         onClick={toggleMobileSidebar}
-        aria-label="Toggle menu"
       >
         <Menu className="w-5 h-5" />
       </Button>
 
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col min-w-0">
+      {/* Main Content Area - NO CONTAINER, NO MX-AUTO */}
+      <div className="flex flex-col flex-1 h-full w-full overflow-hidden">
         {/* Main Content */}
-        <main className="flex-1 container mx-auto px-4 overflow-auto">
+        <main className="flex-1 h-full w-full overflow-hidden">
           {currentView === "chat" ? <ChatTab /> : <StudioTab />}
         </main>
       </div>
