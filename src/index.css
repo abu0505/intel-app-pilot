@@ -223,12 +223,23 @@ All colors MUST be HSL.
   }
 
   ::-webkit-scrollbar-thumb {
-    background: rgba(99, 102, 241, 0.5);
-    border-radius: 4px;
+    background-color: #4f46e5; /* Indigo-600 */
+    border-radius: 10px;
+    border: 2px solid transparent;
+    background-clip: content-box;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background: rgba(99, 102, 241, 0.7);
+    background-color: #4338ca; /* Indigo-700 */
+  }
+
+  /* Dark Mode Scrollbar */
+  .dark ::-webkit-scrollbar-thumb {
+    background-color: #6366f1; /* Indigo-500 */
+  }
+
+  .dark ::-webkit-scrollbar-thumb:hover {
+    background-color: #4f46e5; /* Indigo-600 */
   }
 
   * {

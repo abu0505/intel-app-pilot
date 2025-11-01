@@ -157,11 +157,11 @@ const ChatTab = () => {
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* MESSAGES AREA - SCROLLABLE */}
-      <div className="flex-1 h-full w-full overflow-y-auto [scrollbar-gutter:stable] px-0">
+      <div className="flex-1 h-full w-full overflow-y-auto [scrollbar-gutter:stable] px-0" style={{ minHeight: 0 }}>
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
-            <div className="flex flex-col items-center gap-4 mb-12">
+            <div className="flex items-center gap-4 mb-6">
               <img
                 src="/nexon-logo.svg"
                 alt="Nexora AI"
@@ -267,13 +267,13 @@ const ChatTab = () => {
 
       {/* TEXTAREA AT BOTTOM */}
       {messages && messages.length > 0 && (
-        <div className="shrink-0 border-border/30 bg-background px-0 py-0">
+        <div className="shrink-0 border-border/30 bg-background w-full">
           <ChatInput
             value={message}
             onChange={setMessage}
             onSubmit={handleSubmit}
             disabled={sendMessageMutation.isPending}
-            wrapperClass="max-w-[740px] mx-auto px-4 py-4"
+            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4"
           />
         </div>
       )}
