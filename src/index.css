@@ -212,10 +212,12 @@ All colors MUST be HSL.
   }
 }
 
-/* Custom Scrollbar Styling */
+/* Custom Scrollbar Styling - Perplexity Style */
 @layer base {
+  /* Webkit Browsers (Chrome, Safari, Edge) */
   ::-webkit-scrollbar {
     width: 8px;
+    height: 8px;
   }
 
   ::-webkit-scrollbar-track {
@@ -223,27 +225,32 @@ All colors MUST be HSL.
   }
 
   ::-webkit-scrollbar-thumb {
-    background-color: #4f46e5; /* Indigo-600 */
-    border-radius: 10px;
-    border: 2px solid transparent;
-    background-clip: content-box;
+    background: rgba(99, 102, 241, 0.5);
+    border-radius: 4px;
   }
 
   ::-webkit-scrollbar-thumb:hover {
-    background-color: #4338ca; /* Indigo-700 */
+    background: rgba(99, 102, 241, 0.8);
   }
 
-  /* Dark Mode Scrollbar */
-  .dark ::-webkit-scrollbar-thumb {
-    background-color: #6366f1; /* Indigo-500 */
-  }
-
-  .dark ::-webkit-scrollbar-thumb:hover {
-    background-color: #4f46e5; /* Indigo-600 */
-  }
-
+  /* Firefox */
   * {
     scrollbar-width: thin;
     scrollbar-color: rgba(99, 102, 241, 0.5) transparent;
+  }
+
+  /* Dark mode support */
+  @media (prefers-color-scheme: dark) {
+    ::-webkit-scrollbar-track {
+      background: rgba(30, 41, 59, 0.3);
+    }
+
+    ::-webkit-scrollbar-thumb {
+      background: rgba(99, 102, 241, 0.4);
+    }
+
+    ::-webkit-scrollbar-thumb:hover {
+      background: rgba(99, 102, 241, 0.7);
+    }
   }
 }
