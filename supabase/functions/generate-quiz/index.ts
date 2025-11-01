@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,15 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { difficulty, questionCount } = await req.json();
+    const requestSchema = z.object({
+      difficulty: z.enum(["easy", "medium", "hard"], { 
+        errorMap: () => ({ message: "Difficulty must be easy, medium, or hard" })
+      }),
+      questionCount: z.number().int().min(1).max(50, "Question count must be between 1 and 50")
+    });
+
+    const body = await req.json();
+    const { difficulty, questionCount } = requestSchema.parse(body);
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -114,10 +123,18 @@ ${content.substring(0, 3000)}`,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Error in generate-quiz function:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify({ error: "An error occurred generating the quiz" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });

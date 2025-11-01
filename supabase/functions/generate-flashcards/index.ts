@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,12 +13,15 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const {
-      sourceIds,
-      cardCount = 15,
-      difficulty = "medium",
-      topic,
-    } = await req.json();
+    const requestSchema = z.object({
+      sourceIds: z.array(z.string().uuid()).optional(),
+      cardCount: z.number().int().min(1).max(100).default(15),
+      difficulty: z.enum(["easy", "medium", "hard"]).default("medium"),
+      topic: z.string().trim().max(200).optional()
+    });
+
+    const body = await req.json();
+    const { sourceIds, cardCount, difficulty, topic } = requestSchema.parse(body);
 
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -172,10 +176,18 @@ ${combinedContent.substring(0, 4000)}`;
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    const message = error instanceof Error ? error.message : "Unknown error";
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Error in generate-flashcards function:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    return new Response(
+      JSON.stringify({ error: "An error occurred generating flashcards" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });

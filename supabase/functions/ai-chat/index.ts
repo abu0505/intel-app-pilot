@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,14 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { message, sessionId, notebookId } = await req.json();
+    const requestSchema = z.object({
+      message: z.string().trim().min(1, "Message cannot be empty").max(5000, "Message too long"),
+      sessionId: z.string().uuid("Invalid session ID"),
+      notebookId: z.string().uuid("Invalid notebook ID").optional()
+    });
+
+    const body = await req.json();
+    const { message, sessionId, notebookId } = requestSchema.parse(body);
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -122,15 +130,20 @@ serve(async (req: Request) => {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (error) {
-    console.error("ai-chat edge function error", error);
-    const message = error instanceof Error
-      ? error.message
-      : typeof error === "string"
-        ? error
-        : JSON.stringify(error);
-    return new Response(JSON.stringify({ error: message }), {
-      status: 500,
-      headers: { ...corsHeaders, "Content-Type": "application/json" },
-    });
+    console.error("Error in ai-chat function:", error);
+    
+    // Return user-friendly errors for validation issues
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
+    // Generic error for all other cases
+    return new Response(
+      JSON.stringify({ error: "An error occurred processing your request" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+    );
   }
 });
