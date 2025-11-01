@@ -156,8 +156,8 @@ const ChatTab = () => {
 
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
-      {/* MESSAGES AREA - SCROLLABLE */}
-      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
+      {/* SCROLLABLE CONTAINER - Messages + Input */}
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0 w-full">
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
@@ -180,8 +180,8 @@ const ChatTab = () => {
             />
           </div>
         ) : (
-          // MESSAGES LIST
-          <div className="w-full px-4 py-4 space-y-4 max-w-[740px] mx-auto">
+          // MESSAGES LIST - CENTERED WITH FULL WIDTH
+          <div className="max-w-[740px] mx-auto w-full px-4 py-4 space-y-4">
             {messages.map((msg) => (
               <div
                 key={msg.id}
