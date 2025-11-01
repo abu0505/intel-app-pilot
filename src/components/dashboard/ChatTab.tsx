@@ -149,21 +149,25 @@ const ChatTab = () => {
   // Reusable input form (used in empty state and when messages exist)
   const InputForm = ({ wrapperClass = "max-w-2xl mx-auto px-4 py-4" }: { wrapperClass?: string }) => {
     const textareaRef = useRef<HTMLTextAreaElement>(null);
-    
+    const [isComposing, setIsComposing] = useState(false);
+
     const handleChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      const target = e.target;
-      const cursorPosition = target.selectionStart;
-      const newValue = target.value;
-      
-      setMessage(newValue);
-      
-      // Preserve cursor position after state update
-      requestAnimationFrame(() => {
-        if (textareaRef.current) {
-          textareaRef.current.selectionStart = cursorPosition;
-          textareaRef.current.selectionEnd = cursorPosition;
-        }
-      });
+      if (isComposing) {
+        // For IME, let the browser handle the input until composition ends
+        setMessage(e.target.value);
+      } else {
+        setMessage(e.target.value);
+      }
+    };
+
+    const handleComposition = (e: React.CompositionEvent<HTMLTextAreaElement>) => {
+      if (e.type === 'compositionstart') {
+        setIsComposing(true);
+      } else if (e.type === 'compositionend') {
+        setIsComposing(false);
+        // Manually trigger onChange to update state with final composed text
+        handleChange(e as any);
+      }
     };
     
     return (
@@ -174,8 +178,11 @@ const ChatTab = () => {
               ref={textareaRef}
               value={message}
               onChange={handleChange}
+              onCompositionStart={handleComposition}
+              onCompositionUpdate={handleComposition}
+              onCompositionEnd={handleComposition}
               onKeyDown={(e) => {
-                if (e.key === "Enter" && !e.shiftKey) {
+                if (e.key === "Enter" && !e.shiftKey && !isComposing) {
                   e.preventDefault();
                   handleSubmit(e);
                 }
