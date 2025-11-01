@@ -171,134 +171,49 @@ const ChatTab = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto px-4 py-6">
+      <div className="flex-1 overflow-y-auto">
         {!messages || messages.length === 0 ? (
-          /* Empty State - Centered Branding */
-          <div className="flex flex-col items-center justify-center h-full">
-            <div className="flex items-center gap-3 mb-3">
-              <img
-                src="/nexon-logo.svg"
-                alt="Nexora AI"
-                className="w-12 h-12"
-              />
-              <h1 className="text-4xl font-semibold text-foreground">Nexora AI</h1>
+          // Empty state: Logo + textarea CENTER
+          <div className="flex flex-col items-center justify-center h-full gap-4">
+            <div className="flex items-center gap-3">
+              <img src="/nexon-logo.svg" alt="Nexora AI" className="w-12 h-12" />
+              <h1 className="text-2xl font-semibold">Nexora AI</h1>
             </div>
-            
-            {/* Show loading animation for first message */}
-            {sendMessageMutation.isPending && (
-              <div className="w-full max-w-2xl mb-4 px-4">
-                <LoadingMessage />
-              </div>
-            )}
+            <div className="w-full max-w-2xl">
+              <ChatInput
+                value={message}
+                onChange={setMessage}
+                onSubmit={handleSubmit}
+                disabled={sendMessageMutation.isPending}
+                wrapperClass="max-w-2xl w-full mx-auto px-4"
+              />
+            </div>
           </div>
         ) : (
-          /* Messages Display */
-          <div className="max-w-4xl mx-auto space-y-6">
+          // Messages display
+          <div className="space-y-4 p-4">
             {messages.map((msg) => (
-              <div
-                key={msg.id}
-                className={`flex ${msg.message_type === "user" ? "justify-end" : "justify-start"}`}
-              >
-                <div
-                  className={`max-w-[80%] rounded-2xl p-4 ${
-                    msg.message_type === "user"
-                      ? "bg-primary/10 border border-primary/20"
-                      : "bg-muted/50 border border-border/50"
-                  }`}
-                >
-                  <div className="prose prose-sm dark:prose-invert max-w-none">
-                    <MarkdownMessage content={msg.content} />
-                  </div>
-                  
-                  {/* Source Citations */}
-                  {msg.sources_referenced && msg.sources_referenced.length > 0 && (
-                    <div className="mt-3 pt-3 border-t border-border/50">
-                      <p className="text-xs text-muted-foreground mb-2">Sources:</p>
-                      <div className="flex flex-wrap gap-2">
-                        {msg.sources_referenced.map((source, idx) => (
-                          <span
-                            key={idx}
-                            className="text-xs bg-background/50 px-2 py-1 rounded-md border border-border/30"
-                          >
-                            {source}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  {/* Message Actions */}
-                  {msg.message_type === "assistant" && (
-                    <div className="mt-3 pt-3 border-t border-border/50 flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => copyMessage(msg.content, msg.id)}
-                      >
-                        <Copy className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={regenerateMessage}
-                      >
-                        <RefreshCw className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => shareMessage(msg.content)}
-                      >
-                        <Share2 className="w-4 h-4" />
-                      </Button>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(msg.created_at).toLocaleTimeString()}
-                  </p>
+              <div key={msg.id} className={`flex ${msg.message_type === "user" ? "justify-end" : "justify-start"}`}>
+                <div className={`max-w-[80%] rounded-2xl p-4 ${msg.message_type === "user" ? "bg-primary/10" : "bg-muted/50"}`}>
+                  <MarkdownMessage content={msg.content} />
                 </div>
               </div>
             ))}
-
-            {/* Show loading animation while AI is responding */}
-            {sendMessageMutation.isPending && messages.at(-1)?.message_type === 'user' && (
-              <div className="flex justify-start">
-                <div className="max-w-[80%]">
-                  <LoadingMessage />
-                </div>
-              </div>
-            )}
-
+            {sendMessageMutation.isPending && <LoadingMessage />}
             <div ref={messagesEndRef} />
           </div>
         )}
       </div>
 
-      {/* Textarea Position */}
-      {!messages || messages.length === 0 ? (
-        // CENTER - Empty state
-        <div className="flex items-center justify-center flex-1">
-          <ChatInput 
-            value={message} 
-            onChange={setMessage} 
+      {/* Textarea - slides to bottom */}
+      {messages && messages.length > 0 && (
+        <div className="transition-all duration-500 ease-out relative pb-4">
+          <ChatInput
+            value={message}
+            onChange={setMessage}
             onSubmit={handleSubmit}
             disabled={sendMessageMutation.isPending}
-            wrapperClass="max-w-2xl w-full mx-auto px-4"
-          />
-        </div>
-      ) : (
-        // BOTTOM - After first message (with smooth transition)
-        <div className="transition-all duration-500 ease-out">
-          <ChatInput 
-            value={message} 
-            onChange={setMessage} 
-            onSubmit={handleSubmit}
-            disabled={sendMessageMutation.isPending}
-            wrapperClass="max-w-2xl mx-auto px-4 py-4 border-border/30"
+            wrapperClass="max-w-2xl mx-auto px-4"
           />
         </div>
       )}
