@@ -171,7 +171,7 @@ const ChatTab = () => {
   return (
     <div className="flex flex-col h-screen">
       {/* Messages Area */}
-      <div className="flex-1 overflow-y-auto">
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable]">
         {!messages || messages.length === 0 ? (
           // Empty state: Logo + textarea CENTER
           <div className="flex flex-col items-center justify-center h-full gap-4">
@@ -179,19 +179,19 @@ const ChatTab = () => {
               <img src="/nexon-logo.svg" alt="Nexora AI" className="w-12 h-12" />
               <h1 className="text-2xl font-semibold">Nexora AI</h1>
             </div>
-            <div className="w-full max-w-2xl">
+            <div className="w-full max-w-3xl">
               <ChatInput
                 value={message}
                 onChange={setMessage}
                 onSubmit={handleSubmit}
                 disabled={sendMessageMutation.isPending}
-                wrapperClass="max-w-2xl w-full mx-auto px-4"
+                wrapperClass="max-w-3xl w-full mx-auto px-4"
               />
             </div>
           </div>
         ) : (
           // Messages display
-          <div className="space-y-4 p-4">
+          <div className="space-y-4 p-4 max-w-3xl mx-auto">
             {messages.map((msg) => (
               <div key={msg.id} className={`flex ${msg.message_type === "user" ? "justify-end" : "justify-start"}`}>
                 <div className={`max-w-[80%] rounded-2xl p-4 ${msg.message_type === "user" ? "bg-primary/10" : "bg-muted/50"}`}>
@@ -207,13 +207,13 @@ const ChatTab = () => {
 
       {/* Textarea - slides to bottom */}
       {messages && messages.length > 0 && (
-        <div className="transition-all duration-500 ease-out relative pb-4">
+        <div className="border-border/30 bg-background">
           <ChatInput
             value={message}
             onChange={setMessage}
             onSubmit={handleSubmit}
             disabled={sendMessageMutation.isPending}
-            wrapperClass="max-w-2xl mx-auto px-4"
+            wrapperClass="max-w-3xl mx-auto px-4"
           />
         </div>
       )}
