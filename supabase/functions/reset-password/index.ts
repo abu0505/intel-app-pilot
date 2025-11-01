@@ -1,15 +1,23 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface RequestBody {
-  token: string;
-  newPassword: string;
-}
+const passwordSchema = z.string()
+  .min(12, "Password must be at least 12 characters")
+  .regex(/[A-Z]/, "Password must contain at least one uppercase letter")
+  .regex(/[a-z]/, "Password must contain at least one lowercase letter")
+  .regex(/[0-9]/, "Password must contain at least one number")
+  .regex(/[^A-Za-z0-9]/, "Password must contain at least one special character");
+
+const requestSchema = z.object({
+  token: z.string().uuid("Invalid reset token"),
+  newPassword: passwordSchema
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,22 +29,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { token, newPassword }: RequestBody = await req.json();
-
-    if (!token || !newPassword) {
-      return new Response(
-        JSON.stringify({ error: "Token and new password are required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
-
-    // Validate password strength
-    if (newPassword.length < 8) {
-      return new Response(
-        JSON.stringify({ error: "Password must be at least 8 characters long" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const body = await req.json();
+    const { token, newPassword } = requestSchema.parse(body);
 
     // Find the reset token
     const { data: resetToken, error: tokenError } = await supabase
@@ -93,8 +87,16 @@ serve(async (req) => {
     );
   } catch (error) {
     console.error("Error in reset-password:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
+      JSON.stringify({ error: "An error occurred resetting your password" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }

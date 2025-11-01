@@ -450,6 +450,12 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
+      check_reset_rate_limit: {
+        Args: { p_email: string; p_ip_address: unknown }
+        Returns: boolean
+      }
+      cleanup_expired_reset_tokens: { Args: never; Returns: undefined }
+      cleanup_old_reset_attempts: { Args: never; Returns: undefined }
       show_limit: { Args: never; Returns: number }
       show_trgm: { Args: { "": string }; Returns: string[] }
     }

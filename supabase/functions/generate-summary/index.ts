@@ -1,6 +1,7 @@
 // @ts-nocheck
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -12,7 +13,13 @@ serve(async (req: Request) => {
   if (req.method === "OPTIONS") return new Response(null, { headers: corsHeaders });
 
   try {
-    const { sourceId, sessionId } = await req.json();
+    const requestSchema = z.object({
+      sourceId: z.string().uuid("Invalid source ID"),
+      sessionId: z.string().uuid("Invalid session ID")
+    });
+
+    const body = await req.json();
+    const { sourceId, sessionId } = requestSchema.parse(body);
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -120,13 +127,17 @@ serve(async (req: Request) => {
     );
   } catch (error) {
     console.error("Error generating summary:", error);
-    const message = error instanceof Error ? error.message : "Unknown error";
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: message }),
-      {
-        status: 500,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      }
+      JSON.stringify({ error: "An error occurred generating the summary" }),
+      { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });

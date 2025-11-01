@@ -1,15 +1,16 @@
 /// <reference path="../types/esm.d.ts" />
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { z } from "https://deno.land/x/zod@v3.22.4/mod.ts";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-interface RequestBody {
-  email: string;
-}
+const requestSchema = z.object({
+  email: z.string().email("Invalid email address").max(255, "Email too long")
+});
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -21,14 +22,8 @@ serve(async (req) => {
     const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
     const supabase = createClient(supabaseUrl, supabaseServiceKey);
 
-    const { email }: RequestBody = await req.json();
-
-    if (!email) {
-      return new Response(
-        JSON.stringify({ error: "Email is required" }),
-        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
-      );
-    }
+    const body = await req.json();
+    const { email } = requestSchema.parse(body);
 
     // Get IP address for rate limiting
     const rawIp = req.headers.get("x-forwarded-for") || req.headers.get("x-real-ip") || "";
@@ -168,11 +163,15 @@ serve(async (req) => {
         success: true,
       });
 
+      // Log reset link server-side only for development debugging
+      const isDev = Deno.env.get("ENVIRONMENT") === "development";
+      if (isDev) {
+        console.log("DEV ONLY - Password reset link:", resetUrl);
+      }
+
       return new Response(
         JSON.stringify({ 
-          message: "If an account with that email exists, a password reset link has been sent.",
-          // Remove this in production - only for development
-          dev_reset_link: resetUrl 
+          message: "If an account with that email exists, a password reset link has been sent."
         }),
         { status: 200, headers: { ...corsHeaders, "Content-Type": "application/json" } }
       );
@@ -188,8 +187,16 @@ serve(async (req) => {
     }
   } catch (error) {
     console.error("Error in request-password-reset:", error);
+    
+    if (error instanceof z.ZodError) {
+      return new Response(
+        JSON.stringify({ error: error.errors[0].message }),
+        { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
+      );
+    }
+    
     return new Response(
-      JSON.stringify({ error: "An unexpected error occurred" }),
+      JSON.stringify({ error: "An error occurred processing your request" }),
       { status: 500, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
