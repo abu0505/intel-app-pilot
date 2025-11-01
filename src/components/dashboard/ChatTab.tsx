@@ -168,6 +168,8 @@ const ChatTab = () => {
               className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
               disabled={sendMessageMutation.isPending}
               autoFocus
+              dir="ltr"
+              style={{ direction: 'ltr', unicodeBidi: 'plaintext' }}
             />
 
             <div className="flex items-center gap-2 pb-2">
