@@ -18,6 +18,9 @@ import {
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 
+import { FlashcardModal } from "@/components/dashboard/FlashcardModal";
+import { QuizModal } from "@/components/dashboard/QuizModal";
+
 const ACTION_CARDS = [
   {
     id: "flashcards",
@@ -33,13 +36,7 @@ const ACTION_CARDS = [
   },
 ];
 
-export function StudyActions({
-  onOpenFlashcards,
-  onOpenQuiz,
-}: {
-  onOpenFlashcards?: (flashcardId?: string) => void;
-  onOpenQuiz?: (quizId?: string) => void;
-}) {
+export function StudyActions() {
   const { toast } = useToast();
   const {
     generateQuizMutation,
@@ -62,6 +59,8 @@ export function StudyActions({
   const [flashcardToRename, setFlashcardToRename] = useState<{ id: string; title: string } | null>(null);
   const [quizToRename, setQuizToRename] = useState<{ id: string; title: string } | null>(null);
   const [renameValue, setRenameValue] = useState("");
+  const [flashcardModalId, setFlashcardModalId] = useState<string | null>(null);
+  const [quizModalId, setQuizModalId] = useState<string | null>(null);
 
   const closeRenameDialog = () => {
     setFlashcardToRename(null);
@@ -164,7 +163,6 @@ export function StudyActions({
         {
           onSuccess: () => {
             toast({ title: "Quiz is being prepared" });
-            onOpenQuiz?.();
           },
           onError: (error: Error) => {
             toast({ title: "Unable to generate quiz", description: error.message, variant: "destructive" });
@@ -182,7 +180,6 @@ export function StudyActions({
         {
           onSuccess: () => {
             toast({ title: "Flashcards are being generated" });
-            onOpenFlashcards?.();
           },
           onError: (error: Error) => {
             toast({ title: "Unable to generate flashcards", description: error.message, variant: "destructive" });
@@ -294,8 +291,8 @@ export function StudyActions({
             {flashcards.slice(0, 4).map((flashcard) => (
               <Card
                 key={flashcard.id}
-                className={`group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl ${onOpenFlashcards ? "cursor-pointer" : ""}`}
-                onClick={onOpenFlashcards ? () => onOpenFlashcards(flashcard.id) : undefined}
+                className="group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl cursor-pointer"
+                onClick={() => setFlashcardModalId(flashcard.id)}
               >
                 <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
                 <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
@@ -396,8 +393,8 @@ export function StudyActions({
             {quizzes.slice(0, 4).map((quiz) => (
               <Card
                 key={quiz.id}
-                className={`group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl ${onOpenQuiz ? "cursor-pointer" : ""}`}
-                onClick={onOpenQuiz ? () => onOpenQuiz(quiz.id) : undefined}
+                className="group relative overflow-hidden border-border/60 bg-gradient-to-br from-background via-background to-primary/5 shadow-sm transition-all hover:shadow-xl cursor-pointer"
+                onClick={() => setQuizModalId(quiz.id)}
               >
                   <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-transparent to-primary/10 opacity-0 transition-opacity group-hover:opacity-100" />
                   <div className="absolute -right-8 -top-8 h-24 w-24 rounded-full bg-primary/10 blur-2xl" />
@@ -491,6 +488,9 @@ export function StudyActions({
         open={isFlashcardDialogOpen}
         onOpenChange={setFlashcardDialogOpen}
       />
+
+      <FlashcardModal flashcardId={flashcardModalId} onClose={() => setFlashcardModalId(null)} />
+      <QuizModal quizId={quizModalId} onClose={() => setQuizModalId(null)} />
 
       <Dialog open={!!flashcardToRename || !!quizToRename} onOpenChange={(open) => !open && closeRenameDialog()}>
         <DialogContent>

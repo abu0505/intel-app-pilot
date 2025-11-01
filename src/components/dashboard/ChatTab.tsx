@@ -177,6 +177,7 @@ const ChatTab = () => {
               onSubmit={handleSubmit}
               disabled={sendMessageMutation.isPending}
               wrapperClass="w-full max-w-2xl"
+              minHeight="120px"
             />
           </div>
         ) : (
@@ -267,13 +268,14 @@ const ChatTab = () => {
 
       {/* TEXTAREA AT BOTTOM */}
       {messages && messages.length > 0 && (
-        <div className="shrink-0 border-border/30 bg-background w-full">
+        <div className="shrink-0 border-border/30 bg-background w-full mb-6">
           <ChatInput
             value={message}
             onChange={setMessage}
             onSubmit={handleSubmit}
             disabled={sendMessageMutation.isPending}
-            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4"
+            wrapperClass="w-full max-w-[740px] mx-auto px-4 py-4 transition-all duration-300"
+            minHeight="90px"
           />
         </div>
       )}

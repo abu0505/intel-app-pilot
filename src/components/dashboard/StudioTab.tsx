@@ -17,18 +17,10 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StudyActions } from "@/components/dashboard/StudyActions";
-import QuizzesTab from "@/components/dashboard/QuizzesTab";
-import FlashcardsTab from "@/components/dashboard/FlashcardsTab";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
 
-type StudyView = "grid" | "quiz" | "flashcards";
-
-type StudioTabProps = {
-  defaultView?: StudyView;
-};
-
-  const StudioTab = ({ defaultView = "grid" }: StudioTabProps) => {
+  const StudioTab = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const { notebookId } = useParams<{ notebookId: string }>();
@@ -37,9 +29,6 @@ type StudioTabProps = {
   const [sourceType, setSourceType] = useState<string>("text");
   const [selectedSources, setSelectedSources] = useState<string[]>([]);
   const [activeSourceType, setActiveSourceType] = useState<string | "all">("all");
-  const [view, setView] = useState<StudyView>(defaultView);
-  const [selectedFlashcardId, setSelectedFlashcardId] = useState<string | undefined>();
-  const [selectedQuizId, setSelectedQuizId] = useState<string | undefined>();
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [isFetchingTranscript, setIsFetchingTranscript] = useState(false);
@@ -503,33 +492,6 @@ type StudioTabProps = {
     }
   };
 
-  // If viewing quiz or flashcards, show full screen view
-  if (view === "quiz") {
-    return (
-      <QuizzesTab
-        notebookId={notebookId}
-        onBackToStudio={() => {
-          setView("grid");
-          setSelectedQuizId(undefined);
-        }}
-        initialQuizId={selectedQuizId}
-      />
-    );
-  }
-
-  if (view === "flashcards") {
-    return (
-      <FlashcardsTab
-        notebookId={notebookId}
-        onBackToStudio={() => {
-          setView("grid");
-          setSelectedFlashcardId(undefined);
-        }}
-        initialFlashcardId={selectedFlashcardId}
-      />
-    );
-  }
-
   return (
     <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
       {/* Sources Sidebar */}
@@ -656,16 +618,7 @@ type StudioTabProps = {
 
       {/* Studio Content */}
       <div className="space-y-2 rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl">
-        <StudyActions
-          onOpenFlashcards={(flashcardId) => {
-            setSelectedFlashcardId(flashcardId);
-            setView("flashcards");
-          }}
-          onOpenQuiz={(quizId) => {
-            setSelectedQuizId(quizId);
-            setView("quiz");
-          }}
-        />
+        <StudyActions />
       </div>
 
       {/* Add Source Dialog */}

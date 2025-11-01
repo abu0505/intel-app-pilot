@@ -9,6 +9,7 @@ interface ChatInputProps {
   onSubmit: (e: React.FormEvent) => void;
   disabled?: boolean;
   wrapperClass?: string;
+  minHeight?: string;
 }
 
 export const ChatInput = ({ 
@@ -16,7 +17,8 @@ export const ChatInput = ({
   onChange, 
   onSubmit, 
   disabled, 
-  wrapperClass 
+  wrapperClass,
+  minHeight = "120px"
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cursorPositionRef = useRef<number>(0);
@@ -59,11 +61,16 @@ export const ChatInput = ({
               }
             }}
             placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
-            className="flex-1 min-h-[120px] max-h-[300px] resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2"
+            className="flex-1 resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2 transition-all duration-300 ease-in-out"
             disabled={disabled}
             autoFocus
             dir="ltr"
-            style={{ direction: 'ltr', textAlign: 'left' }}
+            style={{ 
+              direction: 'ltr', 
+              textAlign: 'left',
+              minHeight: minHeight,
+              maxHeight: '300px'
+            }}
           />
           <div className="flex items-center gap-2 pb-2">
             <Button
