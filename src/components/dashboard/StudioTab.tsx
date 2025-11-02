@@ -17,6 +17,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { StudyActions } from "@/components/dashboard/StudyActions";
+import DiscoverModal from "@/components/dashboard/DiscoverModal";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
 
@@ -33,6 +34,7 @@ import { useParams } from "react-router-dom";
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
   const [isFetchingTranscript, setIsFetchingTranscript] = useState(false);
   const [isRunningOCR, setIsRunningOCR] = useState(false);
+  const [isDiscoverModalOpen, setIsDiscoverModalOpen] = useState(false);
 
   // Configure PDF.js worker - use CDN for better Vite compatibility
   if (!GlobalWorkerOptions.workerSrc) {
@@ -139,7 +141,7 @@ import { useParams } from "react-router-dom";
     return "Untitled Source";
   };
 
-  const { data: sources, isLoading } = useQuery({
+  const { data: sources, isLoading, refetch } = useQuery({
     queryKey: ["sources", notebookId],
     queryFn: async () => {
       let query = supabase
@@ -558,7 +560,12 @@ import { useParams } from "react-router-dom";
                 <Plus className="h-4 w-4 mr-1" />
                 Add
               </Button>
-              <Button variant="outline" size="sm" className="flex-1">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setIsDiscoverModalOpen(true)}
+              >
                 <Compass className="h-4 w-4 mr-1" />
                 Discover
               </Button>
@@ -767,6 +774,13 @@ import { useParams } from "react-router-dom";
           </form>
         </DialogContent>
       </Dialog>
+
+      <DiscoverModal
+        open={isDiscoverModalOpen}
+        onOpenChange={setIsDiscoverModalOpen}
+        notebookId={notebookId!}
+        onSourcesAdded={() => refetch()}
+      />
     </div>
   );
 };
