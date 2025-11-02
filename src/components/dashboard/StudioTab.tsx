@@ -56,6 +56,29 @@ import { useParams } from "react-router-dom";
     }
   };
 
+  const fetchYouTubeMetadata = async (videoUrl: string): Promise<string | null> => {
+    try {
+      const videoIdMatch = videoUrl.match(/(?:youtube\.com\/watch\?v=|youtu\.be\/|youtube\.com\/embed\/)([^&\n?#]+)/);
+      if (!videoIdMatch) return null;
+      
+      const videoId = videoIdMatch[1];
+      
+      // Use YouTube oEmbed API (no API key required)
+      const response = await fetch(
+        `https://www.youtube.com/oembed?url=https://www.youtube.com/watch?v=${videoId}&format=json`
+      );
+      
+      if (response.ok) {
+        const data = await response.json();
+        return data.title || null;
+      }
+    } catch (e) {
+      console.error("Failed to fetch YouTube metadata:", e);
+    }
+    
+    return null;
+  };
+
   const generateSourceTitle = async (options: {
     manualTitle: string;
     sourceTypeValue: string;
@@ -65,6 +88,14 @@ import { useParams } from "react-router-dom";
     const { manualTitle, sourceTypeValue, sourceUrlValue, contentValue } = options;
     if (manualTitle) {
       return manualTitle;
+    }
+
+    // For YouTube videos, try to get the actual video title first
+    if (sourceTypeValue === "youtube" && sourceUrlValue) {
+      const youtubeTitle = await fetchYouTubeMetadata(sourceUrlValue);
+      if (youtubeTitle) {
+        return youtubeTitle;
+      }
     }
 
     const promptParts = [
@@ -493,10 +524,11 @@ import { useParams } from "react-router-dom";
   };
 
   return (
-    <div className="grid grid-cols-1 lg:grid-cols-[320px_1fr] gap-6">
-      {/* Sources Sidebar */}
-      <TooltipProvider delayDuration={0}>
-        <div className="space-y-4">
+    <div className="flex flex-col h-full w-full bg-background overflow-hidden">
+      <div className="flex flex-1 overflow-hidden min-h-0 gap-6 p-6">
+        {/* Sources Sidebar */}
+        <TooltipProvider delayDuration={0}>
+          <div className="w-80 flex-shrink-0 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
           <div className="rounded-xl border border-border/60 bg-card/50 p-4">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold flex items-center gap-2">
@@ -612,13 +644,16 @@ import { useParams } from "react-router-dom";
                 })}
               </div>
             )}
+            </div>
+          </div>
+        </TooltipProvider>
+
+        {/* Studio Content */}
+        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
+          <div className="space-y-2 rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl">
+            <StudyActions />
           </div>
         </div>
-      </TooltipProvider>
-
-      {/* Studio Content */}
-      <div className="space-y-2 rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl">
-        <StudyActions />
       </div>
 
       {/* Add Source Dialog */}

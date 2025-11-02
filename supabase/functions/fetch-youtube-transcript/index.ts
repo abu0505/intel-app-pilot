@@ -25,36 +25,94 @@ function extractVideoId(url: string): string | null {
   return null;
 }
 
-// Fetch transcript using YouTube Transcript API
+// Fetch transcript using multiple strategies with retries
 async function fetchTranscript(videoId: string): Promise<string> {
-  try {
-    // Using a third-party API service to fetch YouTube transcripts
-    // This is a workaround since Deno doesn't have direct YouTube transcript libraries
-    const response = await fetch(
-      `https://youtube-transcript-api.p.rapidapi.com/transcript?video_id=${videoId}`,
-      {
-        headers: {
-          "X-RapidAPI-Key": Deno.env.get("RAPIDAPI_KEY") || "",
-          "X-RapidAPI-Host": "youtube-transcript-api.p.rapidapi.com",
-        },
+  const strategies = [
+    // Strategy 1: YouTube's timedtext API (most reliable)
+    async () => {
+      try {
+        const response = await fetch(
+          `https://www.youtube.com/api/timedtext?lang=en&v=${videoId}`
+        );
+        if (response.ok) {
+          const xmlText = await response.text();
+          const textMatches = xmlText.matchAll(/<text[^>]*>([^<]+)<\/text>/g);
+          const transcript = Array.from(textMatches)
+            .map(match => match[1])
+            .map(text => text
+              .replace(/&amp;#39;/g, "'")
+              .replace(/&amp;quot;/g, '"')
+              .replace(/&amp;/g, "&")
+            )
+            .join(" ");
+          if (transcript) return transcript;
+        }
+      } catch (e) {
+        console.log("Timedtext API failed:", e);
       }
-    );
+      return null;
+    },
 
-    if (!response.ok) {
-      // Fallback: Try alternative method using internal YouTube API
-      return await fetchTranscriptFallback(videoId);
+    // Strategy 2: Parse from video page HTML
+    async () => {
+      try {
+        return await fetchTranscriptFallback(videoId);
+      } catch (e) {
+        console.log("Fallback parsing failed:", e);
+        return null;
+      }
+    },
+
+    // Strategy 3: RapidAPI (if key available)
+    async () => {
+      const rapidKey = Deno.env.get('RAPIDAPI_KEY');
+      if (!rapidKey) return null;
+      
+      try {
+        const apiResponse = await fetch(
+          `https://youtube-transcript-api.p.rapidapi.com/transcript?video_id=${videoId}`,
+          {
+            headers: {
+              'X-RapidAPI-Key': rapidKey,
+              'X-RapidAPI-Host': 'youtube-transcript-api.p.rapidapi.com'
+            }
+          }
+        );
+
+        if (apiResponse.ok) {
+          const data = await apiResponse.json();
+          if (data.transcript && Array.isArray(data.transcript)) {
+            return data.transcript.map((item: any) => item.text).join(' ');
+          }
+        }
+      } catch (e) {
+        console.log("RapidAPI failed:", e);
+      }
+      return null;
     }
+  ];
 
-    const data = await response.json();
-    if (data.transcript && Array.isArray(data.transcript)) {
-      return data.transcript.map((item: any) => item.text).join(" ");
+  // Try each strategy with exponential backoff
+  for (let attempt = 0; attempt < 2; attempt++) {
+    for (const strategy of strategies) {
+      try {
+        const result = await strategy();
+        if (result) {
+          console.log(`Transcript fetched successfully on attempt ${attempt + 1}`);
+          return result;
+        }
+      } catch (e) {
+        console.log("Strategy failed, trying next...", e);
+      }
     }
-
-    throw new Error("No transcript available");
-  } catch (error) {
-    console.error("Primary transcript fetch failed, trying fallback:", error);
-    return await fetchTranscriptFallback(videoId);
+    
+    // Exponential backoff between attempts
+    if (attempt < 1) {
+      await new Promise(r => setTimeout(r, 1000 * (attempt + 1)));
+    }
   }
+
+  throw new Error("Unable to fetch transcript after all attempts. This video may not have captions available.");
 }
 
 // Fallback method: Fetch transcript directly from YouTube

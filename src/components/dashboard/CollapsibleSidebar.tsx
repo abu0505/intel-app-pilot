@@ -192,10 +192,16 @@ export function CollapsibleSidebar({
       setSessionToDelete(null);
     },
     onError: (error: Error) => {
+      console.error("Delete chat error details:", {
+        error: error.message,
+        sessionId: sessionToDelete,
+        notebookId,
+        stack: error.stack
+      });
       toast({
         variant: "destructive",
         title: "Failed to delete chat",
-        description: error.message,
+        description: error.message || "Please try again. If the issue persists, try refreshing the page.",
       });
     },
   });

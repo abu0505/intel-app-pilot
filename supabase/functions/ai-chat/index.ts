@@ -40,6 +40,15 @@ serve(async (req: Request) => {
     
     if (!user) throw new Error("Unauthorized");
 
+    // Fetch recent chat history for context (last 20 messages = ~10 exchanges)
+    const { data: recentMessages } = await supabase
+      .from("chat_histories")
+      .select("message_type, content")
+      .eq("session_id", sessionId)
+      .eq("user_id", user.id)
+      .order("created_at", { ascending: true })
+      .limit(20);
+
     // Get user's sources for context
     let sourcesQuery = supabase
       .from("sources")
@@ -77,23 +86,33 @@ serve(async (req: Request) => {
       let lastError: string | undefined;
 
       for (const googleModel of geminiModels) {
+        // Build conversation history
+        const conversationHistory = (recentMessages || []).map(msg => ({
+          role: msg.message_type === "user" ? "user" : "model",
+          parts: [{ text: msg.content }]
+        }));
+
+        // Build the full conversation with system prompt and current message
+        const contents = [
+          {
+            role: "user",
+            parts: [{
+              text: `You are a helpful study assistant. Use this context to answer questions (if relevant):\n\n${context}\n\nRemember our conversation history and maintain context across messages.`
+            }]
+          },
+          ...conversationHistory,
+          {
+            role: "user",
+            parts: [{ text: message }]
+          }
+        ];
+
         googleResponse = await fetch(
           `https://generativelanguage.googleapis.com/v1beta/models/${googleModel}:generateContent?key=${googleApiKey}`,
           {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              contents: [
-                {
-                  role: "user",
-                  parts: [
-                    {
-                      text: `You are a helpful study assistant. Use this context to answer questions (if relevant):\n\n${context}\n\nQuestion: ${message}`,
-                    },
-                  ],
-                },
-              ],
-            }),
+            body: JSON.stringify({ contents }),
           },
         );
 
