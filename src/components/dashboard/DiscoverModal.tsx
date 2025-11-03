@@ -175,7 +175,7 @@ const DiscoverModal = ({ open, onOpenChange, notebookId, onSourcesAdded }: Disco
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[80vh] flex flex-col">
+      <DialogContent className="max-w-3xl max-h-[85vh] flex flex-col h-full overflow-y-auto [scrollbar-gutter:stable]">
         <DialogHeader>
           <DialogTitle>Discover Learning Resources</DialogTitle>
           <DialogDescription>
@@ -183,7 +183,7 @@ const DiscoverModal = ({ open, onOpenChange, notebookId, onSourcesAdded }: Disco
           </DialogDescription>
         </DialogHeader>
 
-        <div className="flex gap-2 mt-4">
+        <div className="flex gap-2 mt-1">
           <Input
             placeholder="What do you want to study? (e.g., Machine Learning, Python Programming)"
             value={query}
@@ -201,7 +201,7 @@ const DiscoverModal = ({ open, onOpenChange, notebookId, onSourcesAdded }: Disco
         </div>
 
         {results.length > 0 && (
-          <div className="flex justify-between items-center mt-4 mb-2">
+          <div className="flex justify-between items-center mt-1">
             <p className="text-sm text-muted-foreground">
               Found {results.length} resources ({selectedUrls.size} selected)
             </p>
@@ -221,7 +221,7 @@ const DiscoverModal = ({ open, onOpenChange, notebookId, onSourcesAdded }: Disco
           </div>
         )}
 
-        <ScrollArea className="flex-1 pr-4">
+        <ScrollArea className="flex-1 pr-3">
           {isSearching && (
             <div className="flex flex-col items-center justify-center py-12 text-muted-foreground">
               <Loader2 className="h-8 w-8 animate-spin mb-2" />
@@ -305,7 +305,7 @@ const DiscoverModal = ({ open, onOpenChange, notebookId, onSourcesAdded }: Disco
         </ScrollArea>
 
         {results.length > 0 && (
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t">
+          <div className="flex justify-end gap-2 pt-2 border-t">
             <Button variant="outline" onClick={() => onOpenChange(false)}>
               Cancel
             </Button>
