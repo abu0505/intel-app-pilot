@@ -254,3 +254,26 @@ All colors MUST be HSL.
     }
   }
 }
+
+/* Muted Scrollbar Styling */
+@layer components {
+  .scrollbar-muted::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.5);
+  }
+
+  .scrollbar-muted::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.8);
+  }
+
+  .dark .scrollbar-muted::-webkit-scrollbar-thumb {
+    background-color: hsl(var(--muted-foreground) / 0.4);
+  }
+
+  .dark .scrollbar-muted::-webkit-scrollbar-thumb:hover {
+    background-color: hsl(var(--muted-foreground) / 0.7);
+  }
+
+  .scrollbar-muted {
+    scrollbar-color: hsl(var(--muted-foreground) / 0.5) transparent;
+  }
+}

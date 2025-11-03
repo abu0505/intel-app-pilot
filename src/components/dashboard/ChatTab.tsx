@@ -157,7 +157,7 @@ const ChatTab = () => {
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* SCROLLABLE CONTAINER - Messages + Input */}
-      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0 w-full">
+      <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0 w-full scrollbar-muted">
         {!messages || messages.length === 0 ? (
           // EMPTY STATE - LOGO + TEXTAREA CENTER
           <div className="h-full w-full flex flex-col items-center justify-center px-4 py-8">
@@ -266,7 +266,7 @@ const ChatTab = () => {
 
         {/* STICKY INPUT AT BOTTOM - Inside scroll container for full scrollbar height */}
         {messages && messages.length > 0 && (
-          <div className="sticky bottom-0 max-w-[740px] mx-auto w-full border-t border-border/30 bg-background py-4 px-4">
+          <div className="sticky bottom-0 max-w-[740px] mx-auto w-full border-border/30 bg-background py-4 px-4">
             <ChatInput
               value={message}
               onChange={setMessage}

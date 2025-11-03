@@ -229,7 +229,8 @@ export function StudyActions() {
           return (
             <Card
               key={card.id}
-              className={`relative overflow-hidden border-0 shadow-lg transition hover:shadow-xl bg-gradient-to-br ${card.accent} text-slate-900 dark:text-white`}
+              className={`relative overflow-hidden border-0 shadow-lg transition hover:shadow-xl bg-gradient-to-br ${card.accent} text-slate-900 dark:text-white cursor-pointer`}
+              onClick={() => handlePrimaryAction(card.id)}
             >
               <CardHeader className="flex flex-row items-start justify-between">
                 <div className="space-y-1">
@@ -244,27 +245,21 @@ export function StudyActions() {
                   size="icon"
                   variant="secondary"
                   className="rounded-full bg-background/70 text-foreground dark:bg-white/20 dark:text-white"
-                  onClick={() => handleCustomize(card.id)}
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    handleCustomize(card.id);
+                  }}
                 >
                   <Pencil className="h-4 w-4" />
                 </Button>
               </CardHeader>
               <CardContent className="flex items-center justify-between pt-0">
-                <Button
-                  variant="default"
-                  className="bg-foreground text-background hover:bg-foreground/90 dark:bg-white/90 dark:text-slate-900"
-                  onClick={() => handlePrimaryAction(card.id)}
-                  disabled={isPending || (card.id === "flashcards" && !sources?.length)}
-                >
-                  {isPending ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Generating…
-                    </>
-                  ) : (
-                    "Generate"
-                  )}
-                </Button>
+                {isPending && (
+                  <div className="flex items-center text-sm">
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Generating...
+                  </div>
+                )}
               </CardContent>
             </Card>
           );

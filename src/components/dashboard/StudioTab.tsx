@@ -525,7 +525,7 @@ import { useParams } from "react-router-dom";
 
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
-      <div className="flex flex-1 overflow-hidden min-h-0 gap-6 p-6">
+      <div className="flex flex-1 overflow-hidden min-h-0 gap-3 p-4">
         {/* Sources Sidebar */}
         <TooltipProvider delayDuration={0}>
           <div className="w-80 flex-shrink-0 space-y-4 overflow-y-auto [scrollbar-gutter:stable]">
@@ -649,8 +649,8 @@ import { useParams } from "react-router-dom";
         </TooltipProvider>
 
         {/* Studio Content */}
-        <div className="flex-1 overflow-y-auto [scrollbar-gutter:stable] min-h-0">
-          <div className="space-y-2 rounded-2xl border border-border/50 bg-card/60 p-6 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl">
+        <div className="flex-1 min-h-0">
+          <div className="h-full overflow-y-auto [scrollbar-gutter:stable] space-y-2 rounded-2xl border border-border/50 bg-card/60 p-4 shadow-lg shadow-primary/5 backdrop-blur-sm transition-shadow hover:shadow-xl scrollbar-muted">
             <StudyActions />
           </div>
         </div>
