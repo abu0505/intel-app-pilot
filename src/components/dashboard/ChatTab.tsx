@@ -3,7 +3,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Copy, RefreshCw, Share2 } from "lucide-react";
+import { Send, Copy, RefreshCw, Share2, ThumbsUp, ThumbsDown, Download } from "lucide-react";
+import { VoiceInput } from "./VoiceInput";
+import { TypewriterText } from "./TypewriterText";
 import { useDashboard } from "@/contexts/DashboardContext";
 import { useNotebook } from "@/contexts/NotebookContext";
 import { useParams } from "react-router-dom";
@@ -28,6 +30,15 @@ const ChatTab = () => {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
+  const [reactions, setReactions] = useState<Record<string, 'up' | 'down' | null>>({});
+  const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
+
+  const suggestedQuestions = [
+    "Explain this concept in simple terms",
+    "Create a quiz to test my knowledge",
+    "Generate flashcards for this topic",
+    "What are the key points I should remember?",
+  ];
 
   const { data: messages, isLoading } = useQuery({
     queryKey: ["chat-messages", sessionId, notebookId],
@@ -154,6 +165,35 @@ const ChatTab = () => {
     }
   };
 
+  const handleReaction = async (messageId: string, reaction: 'up' | 'down') => {
+    setReactions(prev => ({
+      ...prev,
+      [messageId]: prev[messageId] === reaction ? null : reaction
+    }));
+    toast({ 
+      title: reaction === 'up' ? "Thanks for the feedback!" : "We'll improve",
+      description: reaction === 'up' ? "Glad you found this helpful" : "Sorry this wasn't helpful"
+    });
+  };
+
+  const exportChat = () => {
+    if (!messages || messages.length === 0) return;
+    
+    const chatText = messages.map(msg => 
+      `${msg.message_type.toUpperCase()}: ${msg.content}\n\n`
+    ).join('');
+    
+    const blob = new Blob([chatText], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `chat-${new Date().toISOString().split('T')[0]}.txt`;
+    a.click();
+    URL.revokeObjectURL(url);
+    
+    toast({ title: "Chat exported successfully" });
+  };
+
   return (
     <div className="flex flex-col h-full w-full bg-background overflow-hidden">
       {/* SCROLLABLE CONTAINER - Messages + Input */}
@@ -169,15 +209,43 @@ const ChatTab = () => {
               />
               <h1 className="text-3xl font-bold text-foreground">Nexon AI</h1>
             </div>
+            
+            <p className="text-muted-foreground mb-6 text-center max-w-md">
+              Ask me anything about your study materials
+            </p>
+
+            {/* Suggested Questions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-8 max-w-2xl w-full">
+              {suggestedQuestions.map((question, idx) => (
+                <button
+                  key={idx}
+                  onClick={() => {
+                    setMessage(question);
+                    handleSubmit(new Event('submit') as any);
+                  }}
+                  className="text-left p-4 rounded-lg border border-border/50 hover:border-primary/50 hover:bg-primary/5 transition-all"
+                >
+                  <p className="text-sm">{question}</p>
+                </button>
+              ))}
+            </div>
 
             {/* TEXTAREA CENTER */}
-            <ChatInput
-              value={message}
-              onChange={setMessage}
-              onSubmit={handleSubmit}
-              disabled={sendMessageMutation.isPending}
-              wrapperClass="w-full max-w-2xl"
-            />
+            <div className="w-full max-w-2xl">
+              <div className="flex items-center gap-2">
+                <ChatInput
+                  value={message}
+                  onChange={setMessage}
+                  onSubmit={handleSubmit}
+                  disabled={sendMessageMutation.isPending}
+                  wrapperClass="flex-1"
+                />
+                <VoiceInput 
+                  onTranscript={(text) => setMessage(text)}
+                  disabled={sendMessageMutation.isPending}
+                />
+              </div>
+            </div>
           </div>
         ) : (
           // MESSAGES LIST - CENTERED WITH FULL WIDTH
@@ -196,7 +264,16 @@ const ChatTab = () => {
                       : "bg-muted/50 border border-border/50"
                   }`}
                 >
-                  <MarkdownMessage content={msg.content} />
+                  {msg.message_type === "assistant" && streamingMessageId === msg.id ? (
+                    <div className="prose dark:prose-invert max-w-none">
+                      <TypewriterText 
+                        text={msg.content} 
+                        onComplete={() => setStreamingMessageId(null)}
+                      />
+                    </div>
+                  ) : (
+                    <MarkdownMessage content={msg.content} />
+                  )}
 
                   {msg.sources_referenced &&
                     msg.sources_referenced.length > 0 && (
@@ -218,31 +295,52 @@ const ChatTab = () => {
                     )}
 
                   {msg.message_type === "assistant" && (
-                    <div className="mt-3 flex gap-2">
+                    <div className="mt-3 flex gap-2 flex-wrap">
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => copyMessage(msg.content, msg.id)}
-                        className="h-6 w-6 p-0 hover:bg-muted"
+                        className="h-7 px-2 hover:bg-muted"
                       >
-                        <Copy className="w-3 h-3" />
+                        <Copy className="w-3 h-3 mr-1" />
+                        Copy
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={regenerateMessage}
-                        className="h-6 w-6 p-0 hover:bg-muted"
+                        className="h-7 px-2 hover:bg-muted"
                       >
-                        <RefreshCw className="w-3 h-3" />
+                        <RefreshCw className="w-3 h-3 mr-1" />
+                        Regenerate
                       </Button>
                       <Button
                         variant="ghost"
                         size="sm"
                         onClick={() => shareMessage(msg.content)}
-                        className="h-6 w-6 p-0 hover:bg-muted"
+                        className="h-7 px-2 hover:bg-muted"
                       >
-                        <Share2 className="w-3 h-3" />
+                        <Share2 className="w-3 h-3 mr-1" />
+                        Share
                       </Button>
+                      <div className="flex gap-1 ml-auto">
+                        <Button
+                          variant={reactions[msg.id] === 'up' ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handleReaction(msg.id, 'up')}
+                          className="h-7 w-7 p-0"
+                        >
+                          <ThumbsUp className="w-3 h-3" />
+                        </Button>
+                        <Button
+                          variant={reactions[msg.id] === 'down' ? "default" : "ghost"}
+                          size="sm"
+                          onClick={() => handleReaction(msg.id, 'down')}
+                          className="h-7 w-7 p-0"
+                        >
+                          <ThumbsDown className="w-3 h-3" />
+                        </Button>
+                      </div>
                     </div>
                   )}
 
@@ -267,13 +365,30 @@ const ChatTab = () => {
         {/* STICKY INPUT AT BOTTOM - Inside scroll container for full scrollbar height */}
         {messages && messages.length > 0 && (
           <div className="sticky bottom-0 max-w-[740px] mx-auto w-full border-border/30 bg-background py-4 px-4">
-            <ChatInput
-              value={message}
-              onChange={setMessage}
-              onSubmit={handleSubmit}
-              disabled={sendMessageMutation.isPending}
-              wrapperClass="w-full"
-            />
+            <div className="flex items-center justify-between mb-2">
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={exportChat}
+                className="h-7"
+              >
+                <Download className="w-3 h-3 mr-1" />
+                Export
+              </Button>
+            </div>
+            <div className="flex items-center gap-2">
+              <ChatInput
+                value={message}
+                onChange={setMessage}
+                onSubmit={handleSubmit}
+                disabled={sendMessageMutation.isPending}
+                wrapperClass="flex-1"
+              />
+              <VoiceInput 
+                onTranscript={(text) => setMessage(text)}
+                disabled={sendMessageMutation.isPending}
+              />
+            </div>
           </div>
         )}
       </div>

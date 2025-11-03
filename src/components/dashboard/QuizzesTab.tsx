@@ -1,15 +1,16 @@
 import { useEffect, useState } from "react";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { supabase } from "@/integrations/supabase/client";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Brain, Trophy, ChevronRight, Sparkles, Layers, History, Target } from "lucide-react";
+import { Plus, Brain, Trophy, ChevronRight, Sparkles, Layers, History, Target, Volume2, Lightbulb, CheckCircle, XCircle } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { useQuizzes } from "@/hooks/use-quizzes";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
+import { supabase } from "@/integrations/supabase/client";
 
 type QuizzesTabProps = {
   notebookId?: string;
@@ -24,6 +25,11 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
   const [selectedQuiz, setSelectedQuiz] = useState<any>(null);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [showReview, setShowReview] = useState(false);
+  const [quizResult, setQuizResult] = useState<any>(null);
+  const [showHint, setShowHint] = useState(false);
+  const [hintsUsed, setHintsUsed] = useState<Record<number, boolean>>({});
+  const { speak, stop, isSpeaking } = useTextToSpeech();
 
   const { quizzes, isLoading, generateQuizMutation } = useQuizzes(notebookId);
 
@@ -45,11 +51,18 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
 
       const questions = selectedQuiz.questions;
       let correct = 0;
+      const results: any[] = [];
 
       questions.forEach((q: any, idx: number) => {
-        if (answers[idx] === q.correctAnswer) {
-          correct++;
-        }
+        const isCorrect = answers[idx] === q.correctAnswer;
+        if (isCorrect) correct++;
+        results.push({
+          question: q.question,
+          userAnswer: answers[idx],
+          correctAnswer: q.correctAnswer,
+          isCorrect,
+          explanation: q.explanation || "No explanation available"
+        });
       });
 
       const scorePercentage = (correct / questions.length) * 100;
@@ -67,18 +80,36 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
       });
 
       if (error) throw error;
-      return { scorePercentage, correct, total: questions.length };
+      return { scorePercentage, correct, total: questions.length, results };
     },
     onSuccess: (result) => {
       queryClient.invalidateQueries({ queryKey: ["quizzes"] });
-      toast({
-        title: "Quiz completed!",
-        description: `You scored ${result?.scorePercentage.toFixed(0)}% (${result?.correct}/${result?.total})`,
-      });
-      setSelectedQuiz(null);
-      setAnswers({});
+      setQuizResult(result);
+      setShowReview(true);
     },
   });
+
+  const getHintCount = () => {
+    const questionCount = selectedQuiz?.questions.length || 10;
+    const difficulty = selectedQuiz?.difficulty_level || "medium";
+    
+    if (questionCount <= 5) {
+      return difficulty === "easy" ? 1 : difficulty === "medium" ? 2 : 3;
+    } else if (questionCount <= 10) {
+      return difficulty === "easy" ? 2 : difficulty === "medium" ? 3 : 4;
+    }
+    return difficulty === "easy" ? 3 : difficulty === "medium" ? 4 : 5;
+  };
+
+  const generateHint = (question: any) => {
+    const hints = [
+      `This question is about ${question.category || 'the topic'}`,
+      `Consider the key concepts related to this question`,
+      `Think about what you learned in your sources`,
+      `The answer is one of the options provided - eliminate the obviously wrong ones`,
+    ];
+    return hints[Object.keys(hintsUsed).length % hints.length];
+  };
 
   const handleGenerateSubmit = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -107,11 +138,80 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
     );
   };
 
+  if (showReview && quizResult) {
+    return (
+      <div className="max-w-4xl mx-auto space-y-6">
+        <div className="flex items-center justify-between">
+          <Button
+            variant="ghost"
+            onClick={() => {
+              setShowReview(false);
+              setQuizResult(null);
+              setSelectedQuiz(null);
+              setAnswers({});
+              setCurrentQuestionIndex(0);
+              setHintsUsed({});
+            }}
+          >
+            ← Back to Quizzes
+          </Button>
+        </div>
+
+        <Card>
+          <CardHeader>
+            <CardTitle>Quiz Results</CardTitle>
+            <CardDescription>
+              Score: {quizResult.scorePercentage.toFixed(0)}% ({quizResult.correct}/{quizResult.total})
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            {quizResult.results.map((result: any, idx: number) => (
+              <Card key={idx} className={result.isCorrect ? "border-green-500/50" : "border-red-500/50"}>
+                <CardHeader>
+                  <div className="flex items-start gap-3">
+                    {result.isCorrect ? (
+                      <CheckCircle className="w-5 h-5 text-green-500 mt-1" />
+                    ) : (
+                      <XCircle className="w-5 h-5 text-red-500 mt-1" />
+                    )}
+                    <div className="flex-1">
+                      <CardTitle className="text-base">{result.question}</CardTitle>
+                      <div className="mt-3 space-y-2 text-sm">
+                        <div>
+                          <span className="font-semibold">Your answer: </span>
+                          <span className={result.isCorrect ? "text-green-600" : "text-red-600"}>
+                            {result.userAnswer || "Not answered"}
+                          </span>
+                        </div>
+                        {!result.isCorrect && (
+                          <div>
+                            <span className="font-semibold">Correct answer: </span>
+                            <span className="text-green-600">{result.correctAnswer}</span>
+                          </div>
+                        )}
+                        <div className="pt-2 border-t">
+                          <span className="font-semibold">Explanation: </span>
+                          <p className="text-muted-foreground mt-1">{result.explanation}</p>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </CardHeader>
+              </Card>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   if (selectedQuiz) {
     const questions = selectedQuiz.questions;
     const currentQuestion = questions[currentQuestionIndex];
     const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
     const allAnswered = questions.every((_: any, idx: number) => answers[idx]);
+    const maxHints = getHintCount();
+    const hintsRemaining = maxHints - Object.keys(hintsUsed).length;
 
     return (
       <div className="max-w-3xl mx-auto space-y-6">
@@ -120,9 +220,12 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
             variant="ghost"
             className="hover:text-black hover:bg-primary/10 dark:text-primary-foreground dark:hover:text-primary-foreground dark:hover:bg-primary/20"
             onClick={() => {
+              stop();
               setSelectedQuiz(null);
               setAnswers({});
               setCurrentQuestionIndex(0);
+              setHintsUsed({});
+              setShowHint(false);
               onBackToStudio?.();
             }}
           >
@@ -132,15 +235,51 @@ const QuizzesTab = ({ notebookId, onBackToStudio, initialQuizId }: QuizzesTabPro
 
         <Card>
           <CardHeader>
-            <CardTitle>{selectedQuiz.title}</CardTitle>
-            <CardDescription>
-              Question {currentQuestionIndex + 1} of {questions.length} · {selectedQuiz.difficulty_level}
-            </CardDescription>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle>{selectedQuiz.title}</CardTitle>
+                <CardDescription>
+                  Question {currentQuestionIndex + 1} of {questions.length} · {selectedQuiz.difficulty_level}
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => speak(currentQuestion.question)}
+                  disabled={isSpeaking}
+                >
+                  <Volume2 className="w-4 h-4" />
+                </Button>
+                {hintsRemaining > 0 && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      setShowHint(true);
+                      setHintsUsed({ ...hintsUsed, [currentQuestionIndex]: true });
+                    }}
+                    disabled={hintsUsed[currentQuestionIndex]}
+                  >
+                    <Lightbulb className="w-4 h-4 mr-1" />
+                    Hint ({hintsRemaining})
+                  </Button>
+                )}
+              </div>
+            </div>
             <div className="w-full bg-secondary h-2 rounded-full mt-2">
               <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
           </CardHeader>
           <CardContent className="space-y-6">
+            {showHint && hintsUsed[currentQuestionIndex] && (
+              <div className="p-3 bg-primary/10 border border-primary/20 rounded-lg">
+                <div className="flex items-start gap-2">
+                  <Lightbulb className="w-4 h-4 text-primary mt-0.5" />
+                  <p className="text-sm">{generateHint(currentQuestion)}</p>
+                </div>
+              </div>
+            )}
             <div className="space-y-4">
               <p className="text-xl font-semibold">
                 {currentQuestion.question}

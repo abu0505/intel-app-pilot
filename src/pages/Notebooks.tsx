@@ -10,7 +10,7 @@ import {
 } from "@/components/ui/dropdown-menu";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { Plus, MoreVertical, FileText, Clock, Edit, Trash, BookOpen, Menu } from "lucide-react";
+import { Plus, MoreVertical, FileText, Clock, Edit, Trash, BookOpen, Menu, Archive, Search, SortAsc } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { useToast } from "@/hooks/use-toast";
 import { CollapsibleSidebar } from "@/components/dashboard/CollapsibleSidebar";
@@ -35,6 +35,25 @@ const NotebooksContent = () => {
   const { toast } = useToast();
   const navigate = useNavigate();
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [sortBy, setSortBy] = useState<"name" | "date">("date");
+  const [archivedNotebooks, setArchivedNotebooks] = useState<string[]>([]);
+
+  const gradients = [
+    "from-purple-500/20 to-pink-500/20",
+    "from-blue-500/20 to-cyan-500/20",
+    "from-green-500/20 to-emerald-500/20",
+    "from-orange-500/20 to-red-500/20",
+    "from-indigo-500/20 to-purple-500/20",
+  ];
+
+  const filteredNotebooks = notebooks
+    .filter(n => !archivedNotebooks.includes(n.id))
+    .filter(n => n.name.toLowerCase().includes(searchQuery.toLowerCase()))
+    .sort((a, b) => {
+      if (sortBy === "name") return a.name.localeCompare(b.name);
+      return new Date(b.updated_at).getTime() - new Date(a.updated_at).getTime();
+    });
 
   useEffect(() => {
     fetchNotebooks();
@@ -90,6 +109,15 @@ const NotebooksContent = () => {
     setIsMobileSidebarOpen(false);
   };
 
+  const handleArchive = (notebookId: string) => {
+    setArchivedNotebooks(prev => [...prev, notebookId]);
+    toast({ title: "Notebook archived" });
+  };
+
+  const getGradient = (index: number) => {
+    return gradients[index % gradients.length];
+  };
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -116,12 +144,34 @@ const NotebooksContent = () => {
       </Button>
       <div className="flex-1 flex flex-col min-w-0">
         <main className="flex-1 container mx-auto px-4 py-6 overflow-auto">
-          <div className="flex items-center justify-between mb-8">
-            <h1 className="text-4xl font-bold">My Notebooks</h1>
-            <Button onClick={handleCreateNotebook} size="lg">
-              <Plus className="w-5 h-5 mr-2" />
-              New Notebook
-            </Button>
+          <div className="flex flex-col gap-4 mb-8">
+            <div className="flex items-center justify-between">
+              <h1 className="text-4xl font-bold">My Notebooks</h1>
+              <Button onClick={handleCreateNotebook} size="lg">
+                <Plus className="w-5 h-5 mr-2" />
+                New Notebook
+              </Button>
+            </div>
+            
+            {/* Search and Sort */}
+            <div className="flex gap-3 items-center">
+              <div className="relative flex-1 max-w-md">
+                <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+                <Input
+                  placeholder="Search notebooks..."
+                  value={searchQuery}
+                  onChange={(e) => setSearchQuery(e.target.value)}
+                  className="pl-10"
+                />
+              </div>
+              <Button
+                variant="outline"
+                onClick={() => setSortBy(sortBy === "name" ? "date" : "name")}
+              >
+                <SortAsc className="w-4 h-4 mr-2" />
+                Sort by {sortBy === "name" ? "Date" : "Name"}
+              </Button>
+            </div>
           </div>
 
           {notebooks.length === 0 ? (
@@ -136,13 +186,17 @@ const NotebooksContent = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-              {notebooks.map((notebook) => (
+              {filteredNotebooks.map((notebook, index) => (
                 <Card
                   key={notebook.id}
-                  className="p-6 hover:scale-105 transition-all cursor-pointer hover:shadow-lg border-2"
+                  className="group relative overflow-hidden hover:scale-105 transition-all cursor-pointer hover:shadow-2xl border-2"
                   onClick={() => openNotebook(notebook.id)}
                 >
-                  <div className="text-5xl mb-4">{notebook.icon}</div>
+                  {/* Gradient Cover */}
+                  <div className={`absolute top-0 left-0 right-0 h-24 bg-gradient-to-br ${getGradient(index)}`} />
+                  
+                  <div className="relative p-6">
+                    <div className="text-5xl mb-4">{notebook.icon}</div>
                   
                   <div className="flex items-start justify-between mb-3">
                     <h3 className="text-xl font-semibold truncate flex-1 pr-2">{notebook.name}</h3>
@@ -170,6 +224,15 @@ const NotebooksContent = () => {
                         <DropdownMenuItem
                           onClick={(e) => {
                             e.stopPropagation();
+                            handleArchive(notebook.id);
+                          }}
+                        >
+                          <Archive className="w-4 h-4 mr-2" />
+                          Archive
+                        </DropdownMenuItem>
+                        <DropdownMenuItem
+                          onClick={(e) => {
+                            e.stopPropagation();
                             setDeleteDialog({
                               open: true,
                               notebookId: notebook.id,
@@ -185,14 +248,15 @@ const NotebooksContent = () => {
                     </DropdownMenu>
                   </div>
                   
-                  <div className="text-sm text-muted-foreground space-y-2">
-                    <div className="flex items-center">
-                      <FileText className="w-4 h-4 mr-2" />
-                      {notebook.source_count || 0} sources
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-2" />
-                      {formatDistanceToNow(new Date(notebook.updated_at), { addSuffix: true })}
+                    <div className="text-sm text-muted-foreground space-y-2">
+                      <div className="flex items-center">
+                        <FileText className="w-4 h-4 mr-2" />
+                        {notebook.source_count || 0} sources
+                      </div>
+                      <div className="flex items-center">
+                        <Clock className="w-4 h-4 mr-2" />
+                        {formatDistanceToNow(new Date(notebook.updated_at), { addSuffix: true })}
+                      </div>
                     </div>
                   </div>
                 </Card>

@@ -5,6 +5,31 @@
 /* stylelint-disable-next-line at-rule-no-unknown */
 @tailwind utilities;
 
+/* 3D Transform utilities */
+.perspective-1000 {
+  perspective: 1000px;
+}
+
+.transform-style-3d {
+  transform-style: preserve-3d;
+}
+
+.backface-hidden {
+  backface-visibility: hidden;
+}
+
+.rotate-y-180 {
+  transform: rotateY(180deg);
+}
+
+.transition-transform {
+  transition-property: transform;
+}
+
+.duration-600 {
+  transition-duration: 600ms;
+}
+
 /* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
 All colors MUST be HSL.
 */

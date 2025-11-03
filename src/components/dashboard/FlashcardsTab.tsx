@@ -20,6 +20,9 @@ import {
 } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { FlashcardSet, useFlashcards } from "@/hooks/use-flashcards";
+import { FlashcardFlip3D } from "./FlashcardFlip3D";
+import { useTextToSpeech } from "@/hooks/use-text-to-speech";
+import { Volume2 } from "lucide-react";
 
 type FlashcardsTabProps = {
   notebookId?: string;
@@ -33,7 +36,12 @@ export default function FlashcardsTab({ notebookId, onBackToStudio, initialFlash
   const [selectedFlashcard, setSelectedFlashcard] = useState<FlashcardSet | null>(null);
   const [currentCardIndex, setCurrentCardIndex] = useState(0);
   const [isFlipped, setIsFlipped] = useState(false);
+  const [touchStart, setTouchStart] = useState<number | null>(null);
+  const [touchEnd, setTouchEnd] = useState<number | null>(null);
   const { toast } = useToast();
+  const { speak, isSpeaking } = useTextToSpeech();
+
+  const minSwipeDistance = 50;
 
   const {
     flashcards,
@@ -66,6 +74,28 @@ export default function FlashcardsTab({ notebookId, onBackToStudio, initialFlash
     if (currentCardIndex > 0) {
       setCurrentCardIndex(currentCardIndex - 1);
       setIsFlipped(false);
+    }
+  };
+
+  const onTouchStart = (e: React.TouchEvent) => {
+    setTouchEnd(null);
+    setTouchStart(e.targetTouches[0].clientX);
+  };
+
+  const onTouchMove = (e: React.TouchEvent) => {
+    setTouchEnd(e.targetTouches[0].clientX);
+  };
+
+  const onTouchEnd = () => {
+    if (!touchStart || !touchEnd) return;
+    const distance = touchStart - touchEnd;
+    const isLeftSwipe = distance > minSwipeDistance;
+    const isRightSwipe = distance < -minSwipeDistance;
+    
+    if (isLeftSwipe) {
+      handleNextCard();
+    } else if (isRightSwipe) {
+      handlePrevCard();
     }
   };
 
@@ -117,26 +147,39 @@ export default function FlashcardsTab({ notebookId, onBackToStudio, initialFlash
 
         <Card>
           <CardHeader>
-            <CardTitle>{selectedFlashcard.title}</CardTitle>
-            <div className="flex items-center justify-between">
-              <CardDescription>
-                Card {currentCardIndex + 1} of {selectedFlashcard.cards.length}
-              </CardDescription>
-              <Badge variant="secondary">{currentCard.category}</Badge>
+            <div className="flex items-start justify-between">
+              <div className="flex-1">
+                <CardTitle>{selectedFlashcard.title}</CardTitle>
+                <div className="flex items-center justify-between mt-2">
+                  <CardDescription>
+                    Card {currentCardIndex + 1} of {selectedFlashcard.cards.length}
+                  </CardDescription>
+                  <Badge variant="secondary">{currentCard.category}</Badge>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                size="sm"
+                onClick={() => speak(isFlipped ? currentCard.back : currentCard.front)}
+                disabled={isSpeaking}
+              >
+                <Volume2 className="w-4 h-4" />
+              </Button>
             </div>
             <div className="w-full bg-secondary h-2 rounded-full mt-2">
               <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
             </div>
           </CardHeader>
-          <CardContent className="space-y-6">
-            <div 
-              className="min-h-[300px] flex items-center justify-center p-8 bg-gradient-to-br from-primary/5 to-primary/10 rounded-lg cursor-pointer transition-all hover:scale-[1.02]"
-              onClick={() => setIsFlipped(!isFlipped)}
-            >
-              <p className="text-2xl font-semibold text-center">
-                {isFlipped ? currentCard.back : currentCard.front}
-              </p>
-            </div>
+          <CardContent 
+            className="space-y-6"
+            onTouchStart={onTouchStart}
+            onTouchMove={onTouchMove}
+            onTouchEnd={onTouchEnd}
+          >
+            <FlashcardFlip3D
+              front={currentCard.front}
+              back={currentCard.back}
+            />
 
             <div className="flex items-center justify-between">
               <Button
