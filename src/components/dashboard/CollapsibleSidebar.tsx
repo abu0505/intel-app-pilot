@@ -5,7 +5,7 @@ import { useState } from "react";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle } from "@/components/ui/alert-dialog";
 import { Button } from "@/components/ui/button";
 import { ScrollArea } from "@/components/ui/scroll-area";
-import { ThemeToggle } from "@/components/theme-toggle";
+import { useTheme } from "@/components/theme-provider";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -26,6 +26,8 @@ import {
   Menu,
   Home,
   Trash2,
+  Sun,
+  Moon,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useSidebarState } from "@/hooks/use-sidebar-state";
@@ -75,6 +77,7 @@ export function CollapsibleSidebar({
   const { currentNotebook, notebooks, fetchNotebooks, openNotebook } = useNotebook();
   const { flashcards } = useFlashcards(notebookId);
   const { quizzes } = useQuizzes(notebookId);
+  const { theme, setTheme } = useTheme();
 
   const isInsideNotebook = !!notebookId;
   const isOnNotebooksPage = location.pathname === "/notebooks";
@@ -495,10 +498,17 @@ export function CollapsibleSidebar({
         {/* Bottom Section - Theme & Account */}
         <div className="py-4 flex flex-col items-center space-y-2 w-[74px] self-start">
           {/* Theme Toggle */}
-          <div className="flex flex-col items-center justify-center">
-            <ThemeToggle />
+          <button
+            onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+            className="flex flex-col items-center justify-center w-[60px] h-[60px] rounded-xl hover:bg-secondary/50 transition-colors"
+            aria-label="Toggle theme"
+          >
+            <div className="relative w-5 h-5">
+              <Sun className="absolute h-full w-full rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-full w-full rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+            </div>
             <span className="text-[11px] text-muted-foreground mt-1">Theme</span>
-          </div>
+          </button>
 
           {/* Account Dropdown */}
           <DropdownMenu>
