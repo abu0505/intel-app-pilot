@@ -10,7 +10,6 @@ interface ChatInputProps {
   disabled?: boolean;
   wrapperClass?: string;
   minHeight?: string;
-  voiceInput?: React.ReactNode;
 }
 
 export const ChatInput = ({ 
@@ -19,8 +18,7 @@ export const ChatInput = ({
   onSubmit, 
   disabled, 
   wrapperClass,
-  minHeight = "120px",
-  voiceInput
+  minHeight = "120px"
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cursorPositionRef = useRef<number>(0);
@@ -49,29 +47,32 @@ export const ChatInput = ({
   return (
     <div className={wrapperClass || 'max-w-2xl mx-auto px-4 py-4'}>
       <form className="relative" onSubmit={onSubmit}>
-        <div className="flex flex-col items-stretch bg-muted/30 border border-border/50 rounded-3xl p-4 focus-within:border-primary/50 transition-colors">
-          <div>
-            <Textarea
-              ref={textareaRef}
-              value={value}
-              onChange={handleChange}
-              onCompositionStart={handleCompositionStart}
-              onCompositionEnd={handleCompositionEnd}
-              onKeyDown={(e) => {
-                if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
-                  e.preventDefault();
-                  onSubmit(e as any);
-                }
-              }}
-              placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
-              className="flex-1 resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-1"
-              disabled={disabled}
-              autoFocus
-              dir="ltr"
-            />
-          </div>
-          <div className="flex justify-end items-center gap-2 pt-2">
-            {voiceInput}
+        <div className="flex items-end gap-3 bg-muted/30 border border-border/50 rounded-3xl p-3 focus-within:border-primary/50 transition-colors">
+          <Textarea
+            ref={textareaRef}
+            value={value}
+            onChange={handleChange}
+            onCompositionStart={handleCompositionStart}
+            onCompositionEnd={handleCompositionEnd}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter' && !e.shiftKey && !isComposing) {
+                e.preventDefault();
+                onSubmit(e as any);
+              }
+            }}
+            placeholder="I have access to all your uploaded sources. Ask anything about your study materials..."
+            className="flex-1 resize-none bg-transparent border-0 focus-visible:ring-0 focus-visible:ring-offset-0 placeholder:text-muted-foreground/60 px-2 transition-all duration-300 ease-in-out"
+            disabled={disabled}
+            autoFocus
+            dir="ltr"
+            style={{ 
+              direction: 'ltr', 
+              textAlign: 'left',
+              minHeight: minHeight,
+              maxHeight: '300px'
+            }}
+          />
+          <div className="flex items-center gap-2 pb-2">
             <Button
               type="submit"
               size="icon"
