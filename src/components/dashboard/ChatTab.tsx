@@ -232,19 +232,19 @@ const ChatTab = () => {
 
             {/* TEXTAREA CENTER */}
             <div className="w-full max-w-2xl">
-              <div className="flex items-center gap-2">
-                <ChatInput
-                  value={message}
-                  onChange={setMessage}
-                  onSubmit={handleSubmit}
-                  disabled={sendMessageMutation.isPending}
-                  wrapperClass="flex-1"
-                />
-                <VoiceInput 
-                  onTranscript={(text) => setMessage(text)}
-                  disabled={sendMessageMutation.isPending}
-                />
-              </div>
+              <ChatInput
+                value={message}
+                onChange={setMessage}
+                onSubmit={handleSubmit}
+                disabled={sendMessageMutation.isPending}
+                wrapperClass="flex-1"
+                voiceInput={(
+                  <VoiceInput
+                    onTranscript={(text) => setMessage(text)}
+                    disabled={sendMessageMutation.isPending}
+                  />
+                )}
+              />
             </div>
           </div>
         ) : (
@@ -376,19 +376,19 @@ const ChatTab = () => {
                 Export
               </Button>
             </div>
-            <div className="flex items-center gap-2">
-              <ChatInput
-                value={message}
-                onChange={setMessage}
-                onSubmit={handleSubmit}
-                disabled={sendMessageMutation.isPending}
-                wrapperClass="flex-1"
-              />
-              <VoiceInput 
-                onTranscript={(text) => setMessage(text)}
-                disabled={sendMessageMutation.isPending}
-              />
-            </div>
+            <ChatInput
+              value={message}
+              onChange={setMessage}
+              onSubmit={handleSubmit}
+              disabled={sendMessageMutation.isPending}
+              wrapperClass="flex-1"
+              voiceInput={(
+                <VoiceInput
+                  onTranscript={(text) => setMessage(text)}
+                  disabled={sendMessageMutation.isPending}
+                />
+              )}
+            />
           </div>
         )}
       </div>
