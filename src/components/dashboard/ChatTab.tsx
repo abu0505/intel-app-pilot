@@ -80,58 +80,122 @@ const ChatTab = () => {
 
       setMessage("");
 
-      try {
-        const { error: saveError } = await supabase
-          .from("chat_histories")
-          .insert({
-            user_id: userData.user.id,
-            session_id: sessionId,
-            message_type: "user",
-            content,
-            notebook_id: notebookId || null,
-          });
-        if (saveError) throw saveError;
-
-        const { data, error } = await supabase.functions.invoke("ai-chat", {
-          body: { message: content, sessionId, notebookId },
+      // Save user message
+      const { error: saveError } = await supabase
+        .from("chat_histories")
+        .insert({
+          user_id: userData.user.id,
+          session_id: sessionId,
+          message_type: "user",
+          content,
+          notebook_id: notebookId || null,
         });
-        if (error) throw error;
+      if (saveError) throw saveError;
 
-        if (notebookId) {
-          await supabase
-            .from("notebooks")
-            .update({ updated_at: new Date().toISOString() })
-            .eq("id", notebookId);
+      // Create a temporary streaming message
+      const streamingMsgId = `streaming-${Date.now()}`;
+      const streamingMessage: Message = {
+        id: streamingMsgId,
+        message_type: "assistant",
+        content: "",
+        created_at: new Date().toISOString(),
+      };
+
+      queryClient.setQueryData(
+        ["chat-messages", sessionId, notebookId],
+        (old: Message[] | undefined) => [...(old || []), streamingMessage]
+      );
+
+      setStreamingMessageId(streamingMsgId);
+
+      // Start streaming
+      const { data: { session } } = await supabase.auth.getSession();
+      const response = await fetch(
+        `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/ai-chat-stream`,
+        {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${session?.access_token}`,
+          },
+          body: JSON.stringify({ 
+            message: content, 
+            sessionId, 
+            notebookId 
+          }),
         }
+      );
 
-        return data;
-      } catch (error) {
-        queryClient.invalidateQueries({
-          queryKey: ["chat-messages", sessionId, notebookId],
-        });
-        throw error;
+      if (!response.ok) throw new Error("Failed to get AI response");
+
+      const reader = response.body?.getReader();
+      const decoder = new TextDecoder();
+      let accumulatedText = "";
+
+      if (reader) {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+
+          const chunk = decoder.decode(value);
+          const lines = chunk.split("\n");
+
+          for (const line of lines) {
+            if (line.startsWith("data: ")) {
+              const data = line.slice(6);
+              if (data === "[DONE]") continue;
+
+              try {
+                const parsed = JSON.parse(data);
+                if (parsed.text) {
+                  accumulatedText += parsed.text;
+                  
+                  // Update the streaming message
+                  queryClient.setQueryData(
+                    ["chat-messages", sessionId, notebookId],
+                    (old: Message[] | undefined) => {
+                      if (!old) return old;
+                      return old.map(msg =>
+                        msg.id === streamingMsgId
+                          ? { ...msg, content: accumulatedText }
+                          : msg
+                      );
+                    }
+                  );
+                }
+              } catch (e) {
+                console.error("Failed to parse streaming data:", e);
+              }
+            }
+          }
+        }
       }
+
+      if (notebookId) {
+        await supabase
+          .from("notebooks")
+          .update({ updated_at: new Date().toISOString() })
+          .eq("id", notebookId);
+      }
+
+      return { message: accumulatedText };
     },
     onSuccess: () => {
+      setStreamingMessageId(null);
       queryClient.invalidateQueries({
         queryKey: ["chat-messages", sessionId, notebookId],
       });
-      
-      // Trigger typewriter effect for the latest AI message
-      setTimeout(() => {
-        const updatedMessages = queryClient.getQueryData<Message[]>(["chat-messages", sessionId, notebookId]);
-        const latestAssistantMsg = updatedMessages?.filter(m => m.message_type === "assistant").pop();
-        if (latestAssistantMsg) {
-          setStreamingMessageId(latestAssistantMsg.id);
-        }
-      }, 100);
     },
     onError: (error: Error) => {
       console.error("Failed to send chat message", error);
+      setStreamingMessageId(null);
       toast({
         variant: "destructive",
         title: "Failed to send message",
         description: error.message,
+      });
+      queryClient.invalidateQueries({
+        queryKey: ["chat-messages", sessionId, notebookId],
       });
     },
   });
@@ -266,16 +330,7 @@ const ChatTab = () => {
                       : "bg-muted/50 border border-border/50"
                   }`}
                 >
-                  {msg.message_type === "assistant" && streamingMessageId === msg.id ? (
-                    <div className="prose dark:prose-invert max-w-none">
-                      <TypewriterText 
-                        text={msg.content} 
-                        onComplete={() => setStreamingMessageId(null)}
-                      />
-                    </div>
-                  ) : (
-                    <MarkdownMessage content={msg.content} />
-                  )}
+                  <MarkdownMessage content={msg.content} />
 
                   {msg.sources_referenced &&
                     msg.sources_referenced.length > 0 && (

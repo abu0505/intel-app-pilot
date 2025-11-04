@@ -8,7 +8,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, FileText, Trash2, Globe, Video, Folder, FolderOpen, Upload, Search } from "lucide-react";
+import { Plus, FileText, Trash2, Globe, Video, Folder, FolderOpen, Upload } from "lucide-react";
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import {
   Tooltip,
@@ -31,9 +31,9 @@ import { useParams } from "react-router-dom";
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sourceType, setSourceType] = useState<string>("text");
   const [activeSourceType, setActiveSourceType] = useState<string | "all">("all");
-  const [searchQuery, setSearchQuery] = useState("");
-  const [sortBy, setSortBy] = useState<"date" | "name">("date");
   const [previewSource, setPreviewSource] = useState<any>(null);
+  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
+  const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
   const [isExtractingPdf, setIsExtractingPdf] = useState(false);
@@ -192,28 +192,45 @@ import { useParams } from "react-router-dom";
       result = result.filter((source) => source.source_type === activeSourceType);
     }
 
-    // Search by name or content
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      result = result.filter(s => 
-        s.source_name?.toLowerCase().includes(query) ||
-        s.content?.toLowerCase().includes(query)
-      );
-    }
-
-    // Sort
-    if (sortBy === "name") {
-      result = [...result].sort((a, b) => 
-        a.source_name.localeCompare(b.source_name)
-      );
-    } else {
-      result = [...result].sort((a, b) => 
-        new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
-      );
-    }
+    // Sort by date (most recent first)
+    result = [...result].sort((a, b) => 
+      new Date(b.created_at).getTime() - new Date(a.created_at).getTime()
+    );
 
     return result;
-  }, [sources, activeSourceType, searchQuery, sortBy]);
+  }, [sources, activeSourceType]);
+
+  const toggleSourceSelection = (sourceId: string) => {
+    setSelectedSources(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sourceId)) {
+        newSet.delete(sourceId);
+      } else {
+        newSet.add(sourceId);
+      }
+      return newSet;
+    });
+  };
+
+  const toggleSelectAll = () => {
+    if (selectedSources.size === filteredSources.length) {
+      setSelectedSources(new Set());
+    } else {
+      setSelectedSources(new Set(filteredSources.map(s => s.id)));
+    }
+  };
+
+  const toggleSourceExpand = (sourceId: string) => {
+    setExpandedSources(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(sourceId)) {
+        newSet.delete(sourceId);
+      } else {
+        newSet.add(sourceId);
+      }
+      return newSet;
+    });
+  };
 
 
   const loadPdfDocument = async (arrayBuffer: ArrayBuffer) => {
@@ -591,40 +608,25 @@ import { useParams } from "react-router-dom";
               </h3>
             </div>
 
-            <div className="space-y-3 mb-4">
-              <div className="relative">
-                <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Search sources..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-9"
-                />
-              </div>
-              
-              <div className="flex gap-2">
-                <Select value={sortBy} onValueChange={(v: "date" | "name") => setSortBy(v)}>
-                  <SelectTrigger className="flex-1">
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="date">Recent First</SelectItem>
-                    <SelectItem value="name">Name A-Z</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  className="flex-1"
-                  onClick={() => setShowAddDialog(true)}
-                >
-                  <Plus className="h-4 w-4 mr-1" />
-                  Add
-                </Button>
-              </div>
+            <div className="flex gap-2 mb-4">
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setShowAddDialog(true)}
+              >
+                <Plus className="h-4 w-4 mr-1" />
+                Add
+              </Button>
+              <Button
+                variant="outline"
+                size="sm"
+                className="flex-1"
+                onClick={() => setIsDiscoverModalOpen(true)}
+              >
+                Discover
+              </Button>
+            </div>
 
               {/* Drag & Drop Zone */}
               {(!sources || sources.length === 0) && (
@@ -645,7 +647,6 @@ import { useParams } from "react-router-dom";
                   </p>
                 </div>
               )}
-            </div>
 
             <div className="flex items-center gap-2 mb-3">
               <Button
@@ -673,6 +674,19 @@ import { useParams } from "react-router-dom";
               })}
             </div>
 
+            {filteredSources.length > 0 && (
+              <div className="mb-3">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={toggleSelectAll}
+                  className="w-full justify-start text-xs"
+                >
+                  {selectedSources.size === filteredSources.length ? "Deselect All" : "Select All"}
+                </Button>
+              </div>
+            )}
+
             {isLoading ? (
               <div className="space-y-2 mt-2">
                 {Array.from({ length: 3 }).map((_, i) => (
@@ -687,63 +701,54 @@ import { useParams } from "react-router-dom";
             ) : (
               <div className="space-y-2">
                 {filteredSources.map((source) => {
-                  const isProcessing = source.processing_status === 'processing';
-                  
-                  if (isProcessing) {
-                    return (
-                      <div key={source.id} className="rounded-lg border border-border p-3 space-y-2">
-                        <div className="flex items-center gap-2">
-                          <Skeleton className="h-4 w-4" />
-                          <Skeleton className="h-4 flex-1" />
-                        </div>
-                        <Skeleton className="h-3 w-full" />
-                        <Skeleton className="h-3 w-3/4" />
-                      </div>
-                    );
-                  }
+                  const isSelected = selectedSources.has(source.id);
+                  const isExpanded = expandedSources.has(source.id);
                   
                   return (
-                    <Tooltip key={source.id}>
-                      <TooltipTrigger asChild>
-                        <div
-                          className="group flex flex-col gap-2 px-3 py-2 rounded-lg transition-colors hover:bg-muted/40 cursor-pointer"
-                          onClick={() => setPreviewSource(source)}
+                    <div key={source.id} className="rounded-lg border border-border overflow-hidden">
+                      <div className="group flex items-center gap-2 px-3 py-2 transition-colors hover:bg-muted/40">
+                        <input
+                          type="checkbox"
+                          checked={isSelected}
+                          onChange={() => toggleSourceSelection(source.id)}
+                          className="h-4 w-4 rounded border-border"
+                          onClick={(e) => e.stopPropagation()}
+                        />
+                        <div 
+                          className="flex items-center gap-2 flex-1 cursor-pointer"
+                          onClick={() => toggleSourceExpand(source.id)}
                         >
-                          <div className="flex items-center gap-2">
-                            <div className="flex-shrink-0">{getSourceIcon(source.source_type, false)}</div>
-                            <span className="text-sm truncate flex-1" title={source.source_name}>
-                              {source.source_name}
-                            </span>
-                            <button
-                              type="button"
-                              className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
-                              onClick={(event) => {
-                                event.stopPropagation();
-                                deleteSourceMutation.mutate(source.id);
-                              }}
-                              aria-label="Delete source"
-                            >
-                              <Trash2 className="h-3.5 w-3.5" />
-                            </button>
-                          </div>
-                          {source.source_description && (
-                            <p className="text-xs text-muted-foreground line-clamp-2 pl-6">
-                              {source.source_description}
-                            </p>
-                          )}
+                          <div className="flex-shrink-0">{getSourceIcon(source.source_type, isSelected)}</div>
+                          <span className="text-sm truncate flex-1" title={source.source_name}>
+                            {source.source_name}
+                          </span>
                         </div>
-                      </TooltipTrigger>
-                      <TooltipContent side="right" className="max-w-xs">
-                        {source.source_name}
-                      </TooltipContent>
-                    </Tooltip>
+                        <button
+                          type="button"
+                          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            deleteSourceMutation.mutate(source.id);
+                          }}
+                          aria-label="Delete source"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                        </button>
+                      </div>
+                      {isExpanded && source.ai_summary && (
+                        <div className="px-3 py-2 bg-muted/20 border-t border-border">
+                          <p className="text-xs font-semibold text-muted-foreground mb-1">Summary:</p>
+                          <p className="text-xs text-foreground">{source.ai_summary}</p>
+                        </div>
+                      )}
+                    </div>
                   );
                 })}
               </div>
             )}
-            </div>
           </div>
-        </TooltipProvider>
+        </div>
+      </TooltipProvider>
 
         {/* Studio Content */}
         <div className="flex-1 min-h-0">

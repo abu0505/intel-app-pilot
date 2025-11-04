@@ -3,6 +3,9 @@ project_id = "mcvohdpjzihslxkpajqd"
 [functions.ai-chat]
 verify_jwt = true
 
+[functions.ai-chat-stream]
+verify_jwt = true
+
 [functions.generate-embeddings]
 verify_jwt = true
 

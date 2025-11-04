@@ -26,7 +26,6 @@ export const VoiceInput = ({ onTranscript, disabled }: VoiceInputProps) => {
         const transcript = event.results[0][0].transcript;
         onTranscript(transcript);
         setIsListening(false);
-        toast({ title: "Voice captured", description: transcript.slice(0, 50) + "..." });
       };
 
       recognitionRef.current.onerror = (event: any) => {
@@ -64,7 +63,6 @@ export const VoiceInput = ({ onTranscript, disabled }: VoiceInputProps) => {
 
       recognitionRef.current.start();
       setIsListening(true);
-      toast({ title: "Listening...", description: "Speak your question" });
     } catch (error) {
       console.error("Error starting recognition:", error);
       toast({
