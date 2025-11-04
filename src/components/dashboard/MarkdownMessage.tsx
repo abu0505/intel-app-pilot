@@ -1,5 +1,21 @@
 import { useMemo } from "react";
 import type { ReactNode } from "react";
+import Prism from 'prismjs';
+import 'prismjs/themes/prism-tomorrow.css';
+import 'prismjs/components/prism-javascript';
+import 'prismjs/components/prism-typescript';
+import 'prismjs/components/prism-python';
+import 'prismjs/components/prism-java';
+import 'prismjs/components/prism-cpp';
+import 'prismjs/components/prism-csharp';
+import 'prismjs/components/prism-go';
+import 'prismjs/components/prism-rust';
+import 'prismjs/components/prism-sql';
+import 'prismjs/components/prism-json';
+import 'prismjs/components/prism-yaml';
+import 'prismjs/components/prism-bash';
+import 'prismjs/components/prism-css';
+import 'prismjs/components/prism-markup';
 
 type BlockType = "paragraph" | "heading" | "list" | "code-block" | "list-item";
 
@@ -255,21 +271,28 @@ const MarkdownMessage = ({ content }: { content: string }) => {
         break;
 
       case "code-block":
+        const language = block.language || 'text';
+        const grammar = Prism.languages[language] || Prism.languages.text;
+        const highlightedCode = Prism.highlight(block.content, grammar, language);
+        
         elements.push(
-          <div key={key} className="my-3 rounded-lg bg-slate-900 dark:bg-slate-950 overflow-hidden border border-slate-700">
-            <div className="flex items-center justify-between px-4 py-2 bg-slate-800 dark:bg-slate-900 border-b border-slate-700">
-              <span className="text-xs font-mono text-slate-300">{block.language}</span>
+          <div key={key} className="my-3 rounded-lg overflow-hidden border border-border/50">
+            <div className="flex items-center justify-between px-4 py-2 bg-muted/50">
+              <span className="text-xs font-mono text-muted-foreground">{language}</span>
               <button
-                onClick={() => navigator.clipboard.writeText(block.content)}
-                className="text-xs text-slate-400 hover:text-slate-200 transition-colors"
+                onClick={() => {
+                  navigator.clipboard.writeText(block.content);
+                }}
+                className="text-xs text-muted-foreground hover:text-foreground transition-colors"
               >
                 Copy
               </button>
             </div>
-            <pre className="p-4 overflow-x-auto">
-              <code className="text-sm font-mono text-slate-100 leading-relaxed">
-                {block.content}
-              </code>
+            <pre className="p-4 overflow-x-auto bg-muted/30">
+              <code 
+                className={`language-${language} text-sm font-mono`}
+                dangerouslySetInnerHTML={{ __html: highlightedCode }}
+              />
             </pre>
           </div>
         );

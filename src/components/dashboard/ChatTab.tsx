@@ -3,7 +3,8 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { useToast } from "@/hooks/use-toast";
-import { Send, Copy, RefreshCw, Share2, ThumbsUp, ThumbsDown, Download } from "lucide-react";
+import { Send, Copy, RefreshCw, Share2, Download, Check } from "lucide-react";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { VoiceInput } from "./VoiceInput";
 import { TypewriterText } from "./TypewriterText";
 import { useDashboard } from "@/contexts/DashboardContext";
@@ -30,7 +31,6 @@ const ChatTab = () => {
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
-  const [reactions, setReactions] = useState<Record<string, 'up' | 'down' | null>>({});
   const [streamingMessageId, setStreamingMessageId] = useState<string | null>(null);
 
   const suggestedQuestions = [
@@ -116,6 +116,15 @@ const ChatTab = () => {
       queryClient.invalidateQueries({
         queryKey: ["chat-messages", sessionId, notebookId],
       });
+      
+      // Trigger typewriter effect for the latest AI message
+      setTimeout(() => {
+        const updatedMessages = queryClient.getQueryData<Message[]>(["chat-messages", sessionId, notebookId]);
+        const latestAssistantMsg = updatedMessages?.filter(m => m.message_type === "assistant").pop();
+        if (latestAssistantMsg) {
+          setStreamingMessageId(latestAssistantMsg.id);
+        }
+      }, 100);
     },
     onError: (error: Error) => {
       console.error("Failed to send chat message", error);
@@ -165,33 +174,26 @@ const ChatTab = () => {
     }
   };
 
-  const handleReaction = async (messageId: string, reaction: 'up' | 'down') => {
-    setReactions(prev => ({
-      ...prev,
-      [messageId]: prev[messageId] === reaction ? null : reaction
-    }));
-    toast({ 
-      title: reaction === 'up' ? "Thanks for the feedback!" : "We'll improve",
-      description: reaction === 'up' ? "Glad you found this helpful" : "Sorry this wasn't helpful"
-    });
-  };
-
   const exportChat = () => {
     if (!messages || messages.length === 0) return;
     
-    const chatText = messages.map(msg => 
-      `${msg.message_type.toUpperCase()}: ${msg.content}\n\n`
-    ).join('');
+    const markdownContent = messages.map(msg => {
+      const role = msg.message_type === "user" ? "**You:**" : "**AI:**";
+      return `${role}\n\n${msg.content}\n\n---\n`;
+    }).join('\n');
     
-    const blob = new Blob([chatText], { type: 'text/plain' });
+    const header = `# NexonAI Chat Export\n\n*Exported on ${new Date().toLocaleString()}*\n\n---\n\n`;
+    const fullContent = header + markdownContent;
+    
+    const blob = new Blob([fullContent], { type: 'text/markdown' });
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `chat-${new Date().toISOString().split('T')[0]}.txt`;
+    a.download = `nexonai-chat-${new Date().toISOString().split('T')[0]}.md`;
     a.click();
     URL.revokeObjectURL(url);
     
-    toast({ title: "Chat exported successfully" });
+    toast({ title: "Chat exported as Markdown" });
   };
 
   return (
@@ -295,52 +297,76 @@ const ChatTab = () => {
                     )}
 
                   {msg.message_type === "assistant" && (
-                    <div className="mt-3 flex gap-2 flex-wrap">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => copyMessage(msg.content, msg.id)}
-                        className="h-7 px-2 hover:bg-muted"
-                      >
-                        <Copy className="w-3 h-3 mr-1" />
-                        Copy
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={regenerateMessage}
-                        className="h-7 px-2 hover:bg-muted"
-                      >
-                        <RefreshCw className="w-3 h-3 mr-1" />
-                        Regenerate
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => shareMessage(msg.content)}
-                        className="h-7 px-2 hover:bg-muted"
-                      >
-                        <Share2 className="w-3 h-3 mr-1" />
-                        Share
-                      </Button>
-                      <div className="flex gap-1 ml-auto">
-                        <Button
-                          variant={reactions[msg.id] === 'up' ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleReaction(msg.id, 'up')}
-                          className="h-7 w-7 p-0"
-                        >
-                          <ThumbsUp className="w-3 h-3" />
-                        </Button>
-                        <Button
-                          variant={reactions[msg.id] === 'down' ? "default" : "ghost"}
-                          size="sm"
-                          onClick={() => handleReaction(msg.id, 'down')}
-                          className="h-7 w-7 p-0"
-                        >
-                          <ThumbsDown className="w-3 h-3" />
-                        </Button>
-                      </div>
+                    <div className="mt-3 flex gap-1 flex-wrap">
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => copyMessage(msg.content, msg.id)}
+                              className="h-7 w-7"
+                            >
+                              {copiedMessageId === msg.id ? (
+                                <Check className="w-3 h-3" />
+                              ) : (
+                                <Copy className="w-3 h-3" />
+                              )}
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            {copiedMessageId === msg.id ? "Copied" : "Copy"}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={regenerateMessage}
+                              className="h-7 w-7"
+                            >
+                              <RefreshCw className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Regenerate</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => shareMessage(msg.content)}
+                              className="h-7 w-7"
+                            >
+                              <Share2 className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Share</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={exportChat}
+                              className="h-7 w-7"
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </TooltipTrigger>
+                          <TooltipContent>Export</TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
                   )}
 
@@ -365,17 +391,6 @@ const ChatTab = () => {
         {/* STICKY INPUT AT BOTTOM - Inside scroll container for full scrollbar height */}
         {messages && messages.length > 0 && (
           <div className="sticky bottom-0 max-w-[740px] mx-auto w-full border-border/30 bg-background py-4 px-4">
-            <div className="flex items-center justify-between mb-2">
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={exportChat}
-                className="h-7"
-              >
-                <Download className="w-3 h-3 mr-1" />
-                Export
-              </Button>
-            </div>
             <ChatInput
               value={message}
               onChange={setMessage}
