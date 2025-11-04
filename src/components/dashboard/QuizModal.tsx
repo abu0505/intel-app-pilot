@@ -2,12 +2,13 @@ import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ChevronRight, X, Trophy } from "lucide-react";
+import { ChevronRight, X, Trophy, Lightbulb } from "lucide-react";
 import { useQuizzes } from "@/hooks/use-quizzes";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 
 type QuizModalProps = {
   quizId: string | null;
@@ -17,6 +18,9 @@ type QuizModalProps = {
 export function QuizModal({ quizId, onClose }: QuizModalProps) {
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [answers, setAnswers] = useState<Record<number, string>>({});
+  const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
+  const [isAnswerChecked, setIsAnswerChecked] = useState(false);
+  const [showHint, setShowHint] = useState(false);
   const { quizzes, isLoading } = useQuizzes();
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -27,8 +31,18 @@ export function QuizModal({ quizId, onClose }: QuizModalProps) {
     if (quizId) {
       setCurrentQuestionIndex(0);
       setAnswers({});
+      setSelectedAnswer(null);
+      setIsAnswerChecked(false);
+      setShowHint(false);
     }
   }, [quizId]);
+
+  useEffect(() => {
+    // Reset answer check state when changing questions
+    setSelectedAnswer(answers[currentQuestionIndex] || null);
+    setIsAnswerChecked(false);
+    setShowHint(false);
+  }, [currentQuestionIndex]);
 
   const submitQuizMutation = useMutation({
     mutationFn: async () => {
@@ -93,8 +107,56 @@ export function QuizModal({ quizId, onClose }: QuizModalProps) {
 
   const questions = selectedQuiz.questions as any[];
   const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
   const allAnswered = questions.every((_: any, idx: number) => answers[idx]);
+
+  const handleAnswerSelect = (option: string) => {
+    if (isAnswerChecked) return; // Don't allow changing after checking
+    
+    setSelectedAnswer(option);
+    setIsAnswerChecked(true);
+    setAnswers({ ...answers, [currentQuestionIndex]: option });
+  };
+
+  const handleNext = () => {
+    if (currentQuestionIndex < questions.length - 1) {
+      setCurrentQuestionIndex(currentQuestionIndex + 1);
+    }
+  };
+
+  const getOptionStyle = (option: string) => {
+    if (!isAnswerChecked) {
+      return selectedAnswer === option ? "default" : "outline";
+    }
+    
+    // After checking answer
+    const isCorrect = option === currentQuestion.correctAnswer;
+    const isSelected = option === selectedAnswer;
+    
+    if (isCorrect) {
+      return "default"; // Will add green border with className
+    }
+    if (isSelected && !isCorrect) {
+      return "destructive"; // Red for wrong answer
+    }
+    return "outline";
+  };
+
+  const getOptionClassName = (option: string) => {
+    if (!isAnswerChecked) {
+      return "w-full justify-start text-left";
+    }
+    
+    const isCorrect = option === currentQuestion.correctAnswer;
+    const isSelected = option === selectedAnswer;
+    
+    if (isCorrect) {
+      return "w-full justify-start text-left border-2 border-green-500 bg-green-500/10";
+    }
+    if (isSelected && !isCorrect) {
+      return "w-full justify-start text-left border-2 border-destructive";
+    }
+    return "w-full justify-start text-left opacity-50";
+  };
 
   return (
     <Dialog open={!!quizId} onOpenChange={onClose}>
@@ -115,25 +177,57 @@ export function QuizModal({ quizId, onClose }: QuizModalProps) {
             </Button>
           </div>
 
-          <div className="w-full bg-secondary h-2 rounded-full">
-            <div className="bg-primary h-2 rounded-full transition-all" style={{ width: `${progress}%` }} />
-          </div>
-
           <div className="space-y-4">
-            <p className="text-xl font-semibold">{currentQuestion.question}</p>
+            <div className="flex items-start justify-between gap-4">
+              <p className="text-xl font-semibold flex-1">{currentQuestion.question}</p>
+              {currentQuestion.hint && (
+                <Collapsible open={showHint} onOpenChange={setShowHint}>
+                  <CollapsibleTrigger asChild>
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <Lightbulb className="w-4 h-4" />
+                      Hint
+                    </Button>
+                  </CollapsibleTrigger>
+                </Collapsible>
+              )}
+            </div>
+
+            {showHint && currentQuestion.hint && (
+              <div className="p-3 bg-muted/50 rounded-lg border border-border">
+                <p className="text-sm text-muted-foreground flex items-start gap-2">
+                  <Lightbulb className="w-4 h-4 mt-0.5 flex-shrink-0" />
+                  <span>{currentQuestion.hint}</span>
+                </p>
+              </div>
+            )}
+
             <div className="space-y-2">
               {currentQuestion.options.map((option: string, optIdx: number) => (
                 <Button
                   key={optIdx}
-                  variant={answers[currentQuestionIndex] === option ? "default" : "outline"}
-                  className="w-full justify-start text-left"
-                  onClick={() => setAnswers({ ...answers, [currentQuestionIndex]: option })}
+                  variant={getOptionStyle(option)}
+                  className={getOptionClassName(option)}
+                  onClick={() => handleAnswerSelect(option)}
+                  disabled={isAnswerChecked}
                 >
                   <ChevronRight className="w-4 h-4 mr-2" />
                   {option}
                 </Button>
               ))}
             </div>
+
+            {isAnswerChecked && (
+              <div className={`p-3 rounded-lg ${selectedAnswer === currentQuestion.correctAnswer ? 'bg-green-500/10 border border-green-500' : 'bg-destructive/10 border border-destructive'}`}>
+                <p className="text-sm font-medium">
+                  {selectedAnswer === currentQuestion.correctAnswer ? '✓ Correct!' : '✗ Not quite'}
+                </p>
+                {selectedAnswer !== currentQuestion.correctAnswer && currentQuestion.explanation && (
+                  <p className="text-sm mt-1 text-muted-foreground">
+                    {currentQuestion.explanation}
+                  </p>
+                )}
+              </div>
+            )}
           </div>
 
           <div className="flex items-center justify-between pt-4">
@@ -155,31 +249,12 @@ export function QuizModal({ quizId, onClose }: QuizModalProps) {
               </Button>
             ) : (
               <Button
-                onClick={() =>
-                  setCurrentQuestionIndex(Math.min(questions.length - 1, currentQuestionIndex + 1))
-                }
+                onClick={handleNext}
+                disabled={!isAnswerChecked}
               >
                 Next →
               </Button>
             )}
-          </div>
-
-          <div className="flex gap-2 justify-center flex-wrap">
-            {questions.map((_: any, idx: number) => (
-              <button
-                key={idx}
-                onClick={() => setCurrentQuestionIndex(idx)}
-                className={`w-8 h-8 rounded-full text-sm font-medium transition-colors ${
-                  idx === currentQuestionIndex
-                    ? "bg-primary text-primary-foreground"
-                    : answers[idx]
-                    ? "bg-primary/20 text-primary"
-                    : "bg-secondary text-secondary-foreground"
-                }`}
-              >
-                {idx + 1}
-              </button>
-            ))}
           </div>
         </div>
       </DialogContent>

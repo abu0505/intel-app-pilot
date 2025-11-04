@@ -700,21 +700,21 @@ import { useParams } from "react-router-dom";
                           type="checkbox"
                           checked={isSelected}
                           onChange={() => toggleSourceSelection(source.id)}
-                          className="h-4 w-4 rounded border-border"
+                          className="h-4 w-4 rounded border-primary accent-primary cursor-pointer"
                           onClick={(e) => e.stopPropagation()}
                         />
                         <div 
-                          className="flex items-center gap-2 flex-1 cursor-pointer"
+                          className="flex items-center gap-2 flex-1 min-w-0 cursor-pointer"
                           onClick={() => toggleSourceExpand(source.id)}
                         >
                           <div className="flex-shrink-0">{getSourceIcon(source.source_type, isSelected)}</div>
-                          <span className="text-sm truncate flex-1" title={source.source_name}>
+                          <span className="text-sm truncate" title={source.source_name}>
                             {source.source_name}
                           </span>
                         </div>
                         <button
                           type="button"
-                          className="opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
+                          className="flex-shrink-0 opacity-0 group-hover:opacity-100 transition-opacity text-muted-foreground hover:text-destructive"
                           onClick={(e) => {
                             e.stopPropagation();
                             deleteSourceMutation.mutate(source.id);

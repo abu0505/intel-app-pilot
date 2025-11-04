@@ -38,6 +38,7 @@ const NotebooksContent = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [sortBy, setSortBy] = useState<"name" | "date">("date");
   const [archivedNotebooks, setArchivedNotebooks] = useState<string[]>([]);
+  const [showArchivedDialog, setShowArchivedDialog] = useState(false);
 
   const gradients = [
     "from-purple-500/20 to-pink-500/20",
@@ -114,6 +115,13 @@ const NotebooksContent = () => {
     toast({ title: "Notebook archived" });
   };
 
+  const handleUnarchive = (notebookId: string) => {
+    setArchivedNotebooks(prev => prev.filter(id => id !== notebookId));
+    toast({ title: "Notebook unarchived" });
+  };
+
+  const archivedNotebooksList = notebooks.filter(n => archivedNotebooks.includes(n.id));
+
   const getGradient = (index: number) => {
     return gradients[index % gradients.length];
   };
@@ -171,6 +179,15 @@ const NotebooksContent = () => {
                 <SortAsc className="w-4 h-4 mr-2" />
                 Sort by {sortBy === "name" ? "Date" : "Name"}
               </Button>
+              {archivedNotebooks.length > 0 && (
+                <Button
+                  variant="outline"
+                  onClick={() => setShowArchivedDialog(true)}
+                >
+                  <Archive className="w-4 h-4 mr-2" />
+                  Archived ({archivedNotebooks.length})
+                </Button>
+              )}
             </div>
           </div>
 
@@ -320,6 +337,51 @@ const NotebooksContent = () => {
                     Delete Notebook
                   </Button>
                 </DialogFooter>
+              </div>
+            </DialogContent>
+          </Dialog>
+
+          {/* Archived Notebooks Dialog */}
+          <Dialog open={showArchivedDialog} onOpenChange={setShowArchivedDialog}>
+            <DialogContent className="max-w-4xl max-h-[80vh] overflow-y-auto">
+              <DialogHeader>
+                <DialogTitle>Archived Notebooks</DialogTitle>
+                <DialogDescription>
+                  These notebooks have been archived. You can unarchive them to restore them to your main list.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="space-y-4 mt-4">
+                {archivedNotebooksList.length === 0 ? (
+                  <div className="text-center py-8 text-muted-foreground">
+                    <Archive className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                    <p>No archived notebooks</p>
+                  </div>
+                ) : (
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {archivedNotebooksList.map((notebook, index) => (
+                      <Card key={notebook.id} className="p-4">
+                        <div className="flex items-start justify-between mb-2">
+                          <div className="flex items-center gap-3">
+                            <span className="text-3xl">{notebook.icon}</span>
+                            <div>
+                              <h3 className="font-semibold">{notebook.name}</h3>
+                              <p className="text-sm text-muted-foreground">
+                                {notebook.source_count || 0} sources
+                              </p>
+                            </div>
+                          </div>
+                          <Button
+                            variant="outline"
+                            size="sm"
+                            onClick={() => handleUnarchive(notebook.id)}
+                          >
+                            Unarchive
+                          </Button>
+                        </div>
+                      </Card>
+                    ))}
+                  </div>
+                )}
               </div>
             </DialogContent>
           </Dialog>
