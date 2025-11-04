@@ -27,7 +27,7 @@ const ChatTab = () => {
   const queryClient = useQueryClient();
   const { notebookId } = useParams<{ notebookId: string }>();
   const { currentNotebook } = useNotebook();
-  const { sessionId } = useDashboard();
+  const { sessionId, selectedSourceIds } = useDashboard();
   const [message, setMessage] = useState("");
   const messagesEndRef = useRef(null);
   const [copiedMessageId, setCopiedMessageId] = useState(null);
@@ -121,7 +121,8 @@ const ChatTab = () => {
           body: JSON.stringify({ 
             message: content, 
             sessionId, 
-            notebookId 
+            notebookId,
+            selectedSourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined
           }),
         }
       );
@@ -304,6 +305,7 @@ const ChatTab = () => {
                 onSubmit={handleSubmit}
                 disabled={sendMessageMutation.isPending}
                 wrapperClass="flex-1"
+                selectedSourceCount={selectedSourceIds.length}
                 voiceInput={(
                   <VoiceInput
                     onTranscript={(text) => setMessage(text)}
@@ -452,6 +454,7 @@ const ChatTab = () => {
               onSubmit={handleSubmit}
               disabled={sendMessageMutation.isPending}
               wrapperClass="flex-1"
+              selectedSourceCount={selectedSourceIds.length}
               voiceInput={(
                 <VoiceInput
                   onTranscript={(text) => setMessage(text)}

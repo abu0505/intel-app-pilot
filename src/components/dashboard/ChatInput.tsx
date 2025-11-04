@@ -11,6 +11,7 @@ interface ChatInputProps {
   wrapperClass?: string;
   minHeight?: string;
   voiceInput?: React.ReactNode;
+  selectedSourceCount?: number;
 }
 
 export const ChatInput = ({ 
@@ -20,7 +21,8 @@ export const ChatInput = ({
   disabled, 
   wrapperClass,
   minHeight = "120px",
-  voiceInput
+  voiceInput,
+  selectedSourceCount = 0
 }: ChatInputProps) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const cursorPositionRef = useRef<number>(0);
@@ -71,6 +73,11 @@ export const ChatInput = ({
             />
           </div>
           <div className="flex justify-end items-center gap-2 pt-2">
+            {selectedSourceCount > 0 && (
+              <span className="text-sm text-muted-foreground">
+                {selectedSourceCount} {selectedSourceCount === 1 ? 'source' : 'sources'}
+              </span>
+            )}
             {voiceInput}
             <Button
               type="submit"

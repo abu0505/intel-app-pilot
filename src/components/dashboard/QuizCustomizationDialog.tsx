@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useQuizzes, DEFAULT_QUIZ_OPTIONS } from "@/hooks/use-quizzes";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 const QUESTION_COUNT_OPTIONS: Array<{ label: string; value: number }> = [
   { label: "Fewer", value: 5 },
@@ -38,6 +39,7 @@ type QuizCustomizationDialogProps = {
 
 export function QuizCustomizationDialog({ open, onOpenChange, onSuccess }: QuizCustomizationDialogProps) {
   const { generateQuizMutation } = useQuizzes();
+  const { selectedSourceIds } = useDashboard();
   const { toast } = useToast();
   const [questionCount, setQuestionCount] = useState<number>(DEFAULT_QUIZ_OPTIONS.questionCount);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(DEFAULT_QUIZ_OPTIONS.difficulty);
@@ -45,7 +47,12 @@ export function QuizCustomizationDialog({ open, onOpenChange, onSuccess }: QuizC
 
   const handleGenerate = () => {
     generateQuizMutation.mutate(
-      { questionCount, difficulty, topic },
+      { 
+        questionCount, 
+        difficulty, 
+        topic,
+        sourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined
+      },
       {
         onSuccess: () => {
           toast({ title: "Quiz is being generated" });

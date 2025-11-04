@@ -12,6 +12,7 @@ import { ToggleGroup, ToggleGroupItem } from "@/components/ui/toggle-group";
 import { Textarea } from "@/components/ui/textarea";
 import { useToast } from "@/hooks/use-toast";
 import { useFlashcards, DEFAULT_FLASHCARD_OPTIONS } from "@/hooks/use-flashcards";
+import { useDashboard } from "@/contexts/DashboardContext";
 
 const CARD_COUNT_OPTIONS: Array<{ label: string; value: number }> = [
   { label: "Fewer", value: 8 },
@@ -38,6 +39,7 @@ type FlashcardCustomizationDialogProps = {
 
 export function FlashcardCustomizationDialog({ open, onOpenChange, onSuccess }: FlashcardCustomizationDialogProps) {
   const { generateFlashcardsMutation, sources } = useFlashcards();
+  const { selectedSourceIds } = useDashboard();
   const { toast } = useToast();
   const [cardCount, setCardCount] = useState<number>(DEFAULT_FLASHCARD_OPTIONS.cardCount);
   const [difficulty, setDifficulty] = useState<"easy" | "medium" | "hard">(DEFAULT_FLASHCARD_OPTIONS.difficulty);
@@ -45,7 +47,12 @@ export function FlashcardCustomizationDialog({ open, onOpenChange, onSuccess }: 
 
   const handleGenerate = () => {
     generateFlashcardsMutation.mutate(
-      { cardCount, difficulty, topic },
+      { 
+        cardCount, 
+        difficulty, 
+        topic,
+        sourceIds: selectedSourceIds.length > 0 ? selectedSourceIds : undefined
+      },
       {
         onSuccess: () => {
           toast({ title: "Flashcards are being generated" });

@@ -8,6 +8,9 @@ interface DashboardContextType {
   sessionId: string;
   setSessionId: (id: string) => void;
   createNewSession: () => void;
+  selectedSourceIds: string[];
+  setSelectedSourceIds: (ids: string[]) => void;
+  toggleSourceSelection: (id: string) => void;
 }
 
 const DashboardContext = createContext<DashboardContextType | undefined>(undefined);
@@ -15,10 +18,17 @@ const DashboardContext = createContext<DashboardContextType | undefined>(undefin
 export function DashboardProvider({ children }: { children: ReactNode }) {
   const [currentView, setCurrentView] = useState<View>("chat");
   const [sessionId, setSessionId] = useState<string>(() => crypto.randomUUID());
+  const [selectedSourceIds, setSelectedSourceIds] = useState<string[]>([]);
 
   const createNewSession = () => {
     setSessionId(crypto.randomUUID());
     setCurrentView("chat");
+  };
+
+  const toggleSourceSelection = (id: string) => {
+    setSelectedSourceIds((prev) =>
+      prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]
+    );
   };
 
   return (
@@ -29,6 +39,9 @@ export function DashboardProvider({ children }: { children: ReactNode }) {
         sessionId,
         setSessionId,
         createNewSession,
+        selectedSourceIds,
+        setSelectedSourceIds,
+        toggleSourceSelection,
       }}
     >
       {children}

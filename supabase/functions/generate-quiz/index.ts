@@ -17,11 +17,12 @@ serve(async (req: Request) => {
       difficulty: z.enum(["easy", "medium", "hard"], { 
         errorMap: () => ({ message: "Difficulty must be easy, medium, or hard" })
       }),
-      questionCount: z.number().int().min(1).max(50, "Question count must be between 1 and 50")
+      questionCount: z.number().int().min(1).max(50, "Question count must be between 1 and 50"),
+      sourceIds: z.array(z.string().uuid()).optional()
     });
 
     const body = await req.json();
-    const { difficulty, questionCount } = requestSchema.parse(body);
+    const { difficulty, questionCount, sourceIds } = requestSchema.parse(body);
     
     const supabase = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -34,10 +35,17 @@ serve(async (req: Request) => {
     
     if (!user) throw new Error("Unauthorized");
 
-    const { data: sources } = await supabase
+    // Get sources - either selected ones or all user sources
+    let sourcesQuery = supabase
       .from("sources")
       .select("*")
       .eq("user_id", user.id);
+
+    if (sourceIds && sourceIds.length > 0) {
+      sourcesQuery = sourcesQuery.in("id", sourceIds);
+    }
+
+    const { data: sources } = await sourcesQuery;
 
     if (!sources || sources.length === 0) {
       throw new Error("No sources available for quiz generation");

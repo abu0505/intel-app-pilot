@@ -21,6 +21,7 @@ import DiscoverModal from "@/components/dashboard/DiscoverModal";
 import SourcePreviewModal from "@/components/dashboard/SourcePreviewModal";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useNotebook } from "@/contexts/NotebookContext";
+import { useDashboard } from "@/contexts/DashboardContext";
 import { useParams } from "react-router-dom";
 
   const StudioTab = () => {
@@ -28,11 +29,11 @@ import { useParams } from "react-router-dom";
   const queryClient = useQueryClient();
   const { notebookId } = useParams<{ notebookId: string }>();
   const { currentNotebook, updateNotebook, fetchNotebooks } = useNotebook();
+  const { selectedSourceIds, setSelectedSourceIds, toggleSourceSelection } = useDashboard();
   const [showAddDialog, setShowAddDialog] = useState(false);
   const [sourceType, setSourceType] = useState<string>("text");
   const [activeSourceType, setActiveSourceType] = useState<string | "all">("all");
   const [previewSource, setPreviewSource] = useState<any>(null);
-  const [selectedSources, setSelectedSources] = useState<Set<string>>(new Set());
   const [expandedSources, setExpandedSources] = useState<Set<string>>(new Set());
   const [isDragging, setIsDragging] = useState(false);
   const [pdfFile, setPdfFile] = useState<File | null>(null);
@@ -200,23 +201,11 @@ import { useParams } from "react-router-dom";
     return result;
   }, [sources, activeSourceType]);
 
-  const toggleSourceSelection = (sourceId: string) => {
-    setSelectedSources(prev => {
-      const newSet = new Set(prev);
-      if (newSet.has(sourceId)) {
-        newSet.delete(sourceId);
-      } else {
-        newSet.add(sourceId);
-      }
-      return newSet;
-    });
-  };
-
   const toggleSelectAll = () => {
-    if (selectedSources.size === filteredSources.length) {
-      setSelectedSources(new Set());
+    if (selectedSourceIds.length === filteredSources.length) {
+      setSelectedSourceIds([]);
     } else {
-      setSelectedSources(new Set(filteredSources.map(s => s.id)));
+      setSelectedSourceIds(filteredSources.map(s => s.id));
     }
   };
 
@@ -682,7 +671,7 @@ import { useParams } from "react-router-dom";
                   onClick={toggleSelectAll}
                   className="w-full justify-start text-xs"
                 >
-                  {selectedSources.size === filteredSources.length ? "Deselect All" : "Select All"}
+                  {selectedSourceIds.length === filteredSources.length ? "Deselect All" : "Select All"}
                 </Button>
               </div>
             )}
@@ -701,7 +690,7 @@ import { useParams } from "react-router-dom";
             ) : (
               <div className="space-y-2">
                 {filteredSources.map((source) => {
-                  const isSelected = selectedSources.has(source.id);
+                  const isSelected = selectedSourceIds.includes(source.id);
                   const isExpanded = expandedSources.has(source.id);
                   
                   return (

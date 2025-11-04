@@ -5,6 +5,7 @@ export type GenerateQuizOptions = {
   difficulty?: "easy" | "medium" | "hard";
   questionCount?: number;
   topic?: string;
+  sourceIds?: string[];
 };
 
 export const DEFAULT_QUIZ_OPTIONS: Required<Pick<GenerateQuizOptions, "difficulty" | "questionCount">> = {
@@ -40,6 +41,7 @@ export function useQuizzes(notebookId?: string) {
         difficulty: options.difficulty ?? DEFAULT_QUIZ_OPTIONS.difficulty,
         questionCount: options.questionCount ?? DEFAULT_QUIZ_OPTIONS.questionCount,
         topic: options.topic?.trim() || undefined,
+        sourceIds: options.sourceIds && options.sourceIds.length > 0 ? options.sourceIds : undefined,
       };
 
       const { data, error } = await supabase.functions.invoke("generate-quiz", {
