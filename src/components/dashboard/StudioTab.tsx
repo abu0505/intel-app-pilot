@@ -637,6 +637,7 @@ import { useParams } from "react-router-dom";
                 </div>
               )}
 
+            {sources && sources.length > 0 && (
             <div className="flex items-center gap-2 mb-3">
               <Button
                 variant={activeSourceType === "all" ? "secondary" : "ghost"}
@@ -662,6 +663,7 @@ import { useParams } from "react-router-dom";
                 );
               })}
             </div>
+            )}
 
             {filteredSources.length > 0 && (
               <div className="mb-3">

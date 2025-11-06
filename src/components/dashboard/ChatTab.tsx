@@ -428,7 +428,7 @@ const ChatTab = () => {
                   )}
 
                   <p className="text-xs text-muted-foreground mt-2">
-                    {new Date(msg.created_at).toLocaleTimeString()}
+                    {new Date(msg.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </p>
                 </div>
               </div>
